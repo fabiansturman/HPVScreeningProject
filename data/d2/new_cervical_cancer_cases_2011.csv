@@ -1,0 +1,17 @@
+year,name,age,sex,genotype,value
+2011,cancers,0,female,total,0
+2011,cancers,15,female,total,4
+2011,cancers,20,female,total,43
+2011,cancers,25,female,total,353
+2011,cancers,30,female,total,298
+2011,cancers,35,female,total,309
+2011,cancers,40,female,total,322
+2011,cancers,45,female,total,228
+2011,cancers,50,female,total,182
+2011,cancers,55,female,total,141
+2011,cancers,60,female,total,143
+2011,cancers,65,female,total,112
+2011,cancers,70,female,total,87
+2011,cancers,75,female,total,113
+2011,cancers,80,female,total,83
+2011,cancers,85,female,total,93

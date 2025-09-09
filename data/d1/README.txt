@@ -1,0 +1,3 @@
+I think this data for 2020 is correct but for 2017 I am just doing basically the same data as 2020, just wobbled around a lil. THe idea is to get the code to work with this data setup, and then I can just run all the scripts with the real data and it will hopefully 'just work'
+
+Oh also this is something to look at  - when I use the condensed training data, with each file showing a single kind of data but allowing several years in that same file, it does seem to both plot what we want and have a higher GOF like we expect - so does it just 'work' then?? That's ideal!
