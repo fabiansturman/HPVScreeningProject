@@ -116,20 +116,20 @@ if __name__=="__main__":
 
     #I have added new extended ranges where the best parameters from the [B] cals are near to the sides of the ranges. old ranges commented to the right  
     calib_pars = dict(
-            beta=[0.05, 0.00, 0.20], 
-            f_cross_layer= [0.05, 0, 2], 
-            m_cross_layer= [0.05, 0, 2], 
+            beta=[0.05, 0.00, 0.20], #still happy
+            f_cross_layer= [0.05, 0, 2], #always close to 0 but as i think this cant be negaative, still happy
+            m_cross_layer= [0.05, 0, 2], #pretty close to 0, not quite aas much aas f, but still i think i cnt extend the range so happy (for 3, this is also super super close to 0)
             #init_hpv_prev
         )
 
     genotype_pars = dict(
         hpv16=dict(
-            cin_fn=dict(k=[0.5, 0.0, 1.0]),#(k=[0.5, 0.2, 1.0]),
-            dur_cin=dict(par1=[6, 2, 12])#dict(par1=[6, 4, 12])
+            cin_fn=dict(k=[0.5, 0.0, 1.0]),#(k=[0.5, 0.2, 1.0]), haappy now they can be around 0.1 - 3 agrees
+            dur_cin=dict(par1=[6, 1, 12])#dict(par1=[6, 4, 12]) perhaaps push this even lower to 1 min, it seems aaraound 2-3.5 but still. 3 cnt seem to settle here, maybe doesnt maatter thaat much
         ),
         hpv18=dict(
-            cin_fn=dict(k=[0.5, 0.0, 1.0]),#dict(k=[0.5, 0.2, 1.0]),
-            dur_cin=dict(par1=[6, 3, 12])#dict(par1=[6, 4, 12])
+            cin_fn=dict(k=[0.5, 0.0, 1.0]),#dict(k=[0.5, 0.2, 1.0]), haappy now these cn be v small for both caals, it does seem to waant to be quite small
+            dur_cin=dict(par1=[6, 1, 12])#dict(par1=[6, 4, 12]) these seem to waant to be big in 2 and 3, but i wamnder if th9is is because of asymmtery with range of 16, so first lets make them match
         )
         #TODO: dont i want to do the sme with hi5 then??
     )
