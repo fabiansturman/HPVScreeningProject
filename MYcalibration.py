@@ -61,7 +61,7 @@ sophie_casual_matrix = np.array(sophie_casual_matrix)
 
 if __name__=="__main__":
     #---SET UP SIMULATION TO CALIBRATE---#
-    pars = dict(n_agents= 100e3,#40e4,#20e4, #20e3, 
+    pars = dict(n_agents= 250e3,#100e3,#40e4,#20e4, #20e3, 
                 start=1980, end=2017, dt=0.25, #start=1980, end=2020, dt=0.25, 
                 location='united kingdom', 
                 verbose=-1,
@@ -129,6 +129,7 @@ if __name__=="__main__":
             cin_fn=dict(k=[0.5, 0.2, 1.0]),
             dur_cin=dict(par1=[6, 4, 12])
         )
+        #TODO: dont i want to do the sme with hi5 then??
     )
 
     # List the datafiles that contain data that we wish to compare the model to:
@@ -152,10 +153,10 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000, #50
-        n_workers=12, #2
+        n_workers=5,#12, #2
 
         keep_db=True,
-        name="CalibrationRawResults\\d2Cal_8Sep25_6"
+        name="CalibrationRawResults\\d2Cal_10Sep25_2"
   
     )
 
@@ -179,8 +180,4 @@ if __name__=="__main__":
     #---SAVE CALIBRATED PARAMETERS---#
     print(calib.df.head(10))
 
-
-#best_pars = calib.trial_pars_to_sim_pars() # Returns best parameters from calibration in a format ready for sim running
- #   ^i SHOULD BE ABLE TO ACCESS THE OPTUNA OBJECT OR SMTH AND PASS PARAMS FROM A PARTICULAR TRIAL TO GET NOT JUST THE BEST ONES!
-  #  ^ PERHAPS calib.df IS SOME HELP HERE??
-    #DO THIS ONCE LOADED IN PARAMETERS, TO GET IT TO WORK FOR A SIM: sim.update_pars(best_pars)
+    
