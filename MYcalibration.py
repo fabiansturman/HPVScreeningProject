@@ -156,19 +156,11 @@ if __name__=="__main__":
         extra_sim_result_keys=results_to_plot,
         datafiles=datafiles,
 
-<<<<<<< Updated upstream
         total_trials=5000, #50
         n_workers=5,#12, #2
 
         keep_db=True,
         name="CalibrationRawResults\\d2Cal_10Sep25_2"
-=======
-        total_trials=5000, #5000
-        n_workers=7, #2 #12
-
-        keep_db=True,
-        name="CalibrationRawResults\\d2Cal_11Sep25_ZB_D3"
->>>>>>> Stashed changes
   
     )
 
