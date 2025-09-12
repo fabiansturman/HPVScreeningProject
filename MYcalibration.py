@@ -113,21 +113,23 @@ if __name__=="__main__":
     # The parameters in the calib_pars dictionary don't vary by genotype,
     # whereas those in the genotype_pars dictionary do. Both kinds are
     # given in the order [best, lower_bound, upper_bound].
+
+    #I have added new extended ranges where the best parameters from the [B] cals are near to the sides of the ranges. old ranges commented to the right  
     calib_pars = dict(
-            beta=[0.05, 0.00, 0.20], #[0.05, 0.010, 0.20],
-            f_cross_layer= [0.05, 0, 2], #[0.05, 1, 2],
-            m_cross_layer= [0.05, 0, 2], #[0.05, 1, 2],
+            beta=[0.05, 0.00, 0.20], 
+            f_cross_layer= [0.05, 0, 2], 
+            m_cross_layer= [0.05, 0, 2], 
             #init_hpv_prev
         )
 
     genotype_pars = dict(
         hpv16=dict(
-            cin_fn=dict(k=[0.5, 0.2, 1.0]),
-            dur_cin=dict(par1=[6, 4, 12])
+            cin_fn=dict(k=[0.5, 0.0, 1.0]),#(k=[0.5, 0.2, 1.0]),
+            dur_cin=dict(par1=[6, 2, 12])#dict(par1=[6, 4, 12])
         ),
         hpv18=dict(
-            cin_fn=dict(k=[0.5, 0.2, 1.0]),
-            dur_cin=dict(par1=[6, 4, 12])
+            cin_fn=dict(k=[0.5, 0.0, 1.0]),#dict(k=[0.5, 0.2, 1.0]),
+            dur_cin=dict(par1=[6, 3, 12])#dict(par1=[6, 4, 12])
         )
         #TODO: dont i want to do the sme with hi5 then??
     )
@@ -138,7 +140,9 @@ if __name__=="__main__":
         #"C:/Users/fabia/Documents/Uni/DPhil/SophieHPV/HPVsim_FABIAN/data/d1/new_cervical_cancer_cases_2017.csv"]
         #"C:/Users/fabia/Documents/Uni/DPhil/SophieHPV/HPVsim_FABIAN/data/d2/new_cervical_cancer_cases_2017.csv"] #for this data, i am assuming 'cancers' is the number of newly detected cancers in a year; but I suppose the same assumption is the case if I were to use 'cancer_incidence'
         #"C:/Users/fabia/Documents/Uni/DPhil/SophieHPV/HPVsim_FABIAN/data/d2/new_cervical_cancer_cases_UNIFIED.csv"] #for this data, i am assuming 'cancers' is the number of newly detected cancers in a year; but I suppose the same assumption is the case if I were to use 'cancer_incidence'
-        "C:/Users/fabia/Documents/Uni/DPhil/SophieHPV/HPVsim_FABIAN/data/d2/new_cervical_cancer_cases_2012to27.csv"]
+        #"C:/Users/fabia/Documents/Uni/DPhil/SophieHPV/HPVsim_FABIAN/data/d2/new_cervical_cancer_cases_2012to27.csv"]
+        
+        "data\\d2\\new_cervical_cancer_cases_2012to27.csv"]
 
     # List extra results that we don't have data on, but wish to include in the
     # calibration object so we can plot them.
@@ -152,11 +156,19 @@ if __name__=="__main__":
         extra_sim_result_keys=results_to_plot,
         datafiles=datafiles,
 
+<<<<<<< Updated upstream
         total_trials=5000, #50
         n_workers=5,#12, #2
 
         keep_db=True,
         name="CalibrationRawResults\\d2Cal_10Sep25_2"
+=======
+        total_trials=5000, #5000
+        n_workers=7, #2 #12
+
+        keep_db=True,
+        name="CalibrationRawResults\\d2Cal_11Sep25_ZB_D3"
+>>>>>>> Stashed changes
   
     )
 
