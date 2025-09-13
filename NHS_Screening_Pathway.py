@@ -1,5 +1,33 @@
 #Implementing the current NHS England Screening Pathway: https://www.gov.uk/government/publications/cervical-screening-care-pathway/cervical-screening-care-pathway
 
+"""
+Stats that I will be using here:
+
+Treatment effectiveness:
+    -> HPV DNA testing has been modelled with 96% sensitivity to HPV (https://doi.org/10.1002/ijc.31094)
+    -> Cytology has been modelled with 70% sensitivity to low grade CIN, 85% for high grade CIN, and 92% for asymptomatic cancer (https://doi.org/10.1002/ijc.31094)
+    -> POST CYTOLOGY DIAGNOSTICS/TREATMENT has been modelled by https://doi.org/10.1002/ijc.31094 as:
+            - if positive cytology with state='high-grade CIN', 90% assumed treated successfully (allows for some treatment failure and some women not to return for treatment)
+            - if positive cytology with state='low-grade CIN', 5% assmed treated successfully (i.e. preventing possible future progression to high grade CIN without further infection)
+            - of the women with three consecutive HPV +ve, cytology -ve results, they have a colposcopy (like we model), and 
+                    -90% of high-grade CIN treated successfully ONLY
+
+
+    -> Excition:
+            - the HPVsim paper itself says they have modelled them as  95% effective at removing lesions (which, from some googling, should incldue early-stage cervical cancer), and 80% effective at clearing active HPV infection. I have made it 80% effective at traeting preCIN and 95% at CIN, and 0% for cancerous for now because HPVsim doesnt differentiate between cancer stages very well from what I can tell. FOr some reason, this isnt what HPVsim added into teh code even though they say it in the paper, so it doesnt really need a reference 
+
+Compliance:
+    -> Cervical screening coverage 2013-2023 ranges from 68-74%: (73.93386232,74.16190589,73.45176973,72.6770978,72.04060386,71.41738301,71.89922063,72.17636968,70.21941735,69.9326474,68.70463328)% (https://digital.nhs.uk/data-and-information/publications/statistical/cervical-screening-annual/england-2022-2023, published Nov 2023. See the screenshot from Excel that I have saved for details on how I have calculated these figures from the NHS data)
+            - from the same data source, we see that between 2017 and 2023, 15-20% of screens each year are not prompted by the programme (i.e. booked in for a screening otherwise). 
+                ^should i be modelling this?
+    -> Covergae of (complete; one dose) vaccination of females by year in UK (2010-2021): (78,83,87,84,85,84,83,82,82,82,64,59); (86,89,91,90,90,88,86,86,85,85,60,77)
+        ^https://immunizationdata.who.int/global/wiise-detail-page/human-papillomavirus-(hpv)-vaccination-coverage, accessed 24 Oct 2022
+    -> Coverage of (complete; one dose) vaccination of males by year in UK (2020-2021): (-, 48); (53,71) 
+            ^https://immunizationdata.who.int/global/wiise-detail-page/human-papillomavirus-(hpv)-vaccination-coverage, accessed 24 Oct 2022
+
+
+
+"""
 
 #MODELLIGN ASSUMPTION: I THINK I AM NOT MODELLING HIV ALONGSIDE DUE TO NOT HAVING A HIV DATAFILE TO HAND! THAT SIMPLIFIES THE ALG SOMEWHAT
 
@@ -20,7 +48,7 @@ base_parss = [dict(
             start=1970, end=2080,
             #verbose       = 0,   
             rand_seed     = 1,   
-            genotypes     = [16, 18, 'hr'],
+            genotypes     = [16, 18, 'hi5', 'ohr', 'lr'],
             burnin=30,
             location='united kingdom',
             ),
@@ -58,6 +86,32 @@ if __name__=="__main__":
 
         ## Modelling the ongoing NHS HPV Vaccination Strategy
         vacc_prob = 0.8
+
+        """
+        Strategy to be implemented: - NHS policies over time as enumerated by https://doi.org/10.1016/j.lanepe.2024.101157
+        2008-2011: starting vaccination
+            Bivalent Cervarix vaccine to 12-13 year old girls, 3 doses
+
+            + 2008-2010: catch-up campaign
+                    Targeting girls aged 14-18 years with Bivalent Cervarix vaccine, 3 doses
+
+        2012-2013: switch to 4vHPV
+            Quadrivalent Gardasil vaccine to 12-13 year old girls, 3 doses
+
+        2014-2018: down to 2 doses
+            Quadrivalent Gardasil vaccine to 12-13 year old girls, 2 doses
+
+        2019-2021: adding boys
+            Quadrivalent Gardasil vaccine to 12-13 year old girls+boys, 2 doses
+
+        2022-2022: switch to 9vHPV
+            Nonavalent Gardasil-9 vaccine to 12-13 year old girls+boys, 2 doses
+
+        2023-: down to 1 dose
+            Nonavalent Gardasil-9 vaccine to 12-13 year old girls+boys, 1 dose
+
+            TODO: look at parameters.py's 'get_vaccine_choices' function - it looks like i can specify a vaccine as, say, 'nonavalent_3dose' to get a 3 dose regieme administered!
+        """
 
         vx1 = hpv.routine_vx(prob=vacc_prob, start_year=2008,end_year=2020, age_range=[12,13], product='quadrivalent') #vaccinate {vacc_prob} of girls age 12-13 every year, with Gardasil (quadrivalent) vaccine
         vx2 = hpv.routine_vx(prob=vacc_prob, start_year=2020, age_range=[12,13], sex=[0,1], product='nonavalent') #start to vaccinate boys as well

@@ -68,41 +68,22 @@ if __name__=="__main__":
                 debut=dict(f=dict(dist='normal', par1=16.0, par2=3.1), m=dict(dist='normal', par1=16.0, par2=4.1)),
                 mixing = {'m':sophie_married_matrix,
                           'c':sophie_casual_matrix},
-                condoms = dict(m=0.01, c=0.2),  #condom usage in (m)arried and (c)asual relationships
+                condoms = dict(m=0.17, c=0.50) #condom usage in (m)arried and (c)asual relationships
+                
+                genotypes     = [16, 18, 'hi5', 'ohr', 'lr'],
+
+                
                 #NOTE: I think having too many young cancers is probably caused by the debut age being too low <-or it could just be the whole data of that being in shambles, now we have nowhere near enough younger cancers
                     #^or because of the mixing matrices - looks like perhaps adding sophies mixing matrices helps things?
                 )
 
+    #---Implemeting vaccination interventions to match historic+projected vaccination ---#
+    #TODO: do this 
 
+    #---Implemeting screening algorithm(s) to match historic+projected screening ---#
+    #TODO: once my NHS_Screening_Pathway.py code is all good, I can pretty much just copy it over here
 
-    # Implement Current NHS Algorithm (): defining inteventions to screen, triage, assign treatment, and administer treatment
-    
-    #TODO: gradually add intervnetions in, to match the real NHS screening programme. The stuff below is a crude approximation of the programme but definitley not the programme itself.
-
-    start_year = 2015
-    primary_screen_prob = 0.2
-    triage_screen_prob = 0.9
-    ablate_prob = 0.9
-    prob = 0.6
-    screen_eligible = lambda sim: np.isnan(sim.people.date_screened) | (sim.t > (sim.people.date_screened + 3 / sim['dt']))
-
-    #Algorithm 7. HPV DNA as the primary screening test, followed by cytology triage, followed by colposcopy and treatment.
-    hpv_primary7  = hpv.routine_screening(eligibility=screen_eligible, start_year=start_year, prob=primary_screen_prob, product='hpv', label='hpv_primary7') #HPV Testing
-    # Send HPV+ women* for cytology
-    to_cytology = lambda sim: sim.get_intervention('hpv_primary7').outcomes['positive']
-    cytology7   = hpv.routine_triage(eligibility=to_cytology, prob=triage_screen_prob, product='lbc', annual_prob=False, label='cytology7')
-    #Send ASCUS and abnormal cytology results for colpo.
-    to_colpo7 = lambda sim:list(set(sim.get_intervention('cytology7').outcomes['abnormal'].tolist() + sim.get_intervention('cytology7').outcomes['ascus'].tolist())) #Define who's eligible for colpo
-    colpo7 = hpv.routine_triage(eligibility=to_colpo7, prob=triage_screen_prob, product='colposcopy', annual_prob=False, label='colposcopy') #Send people to colposcopy
-    #After colpo, treat HSILs with Ablation
-    hsils7 = lambda sim: sim.get_intervention('colposcopy').outcomes['hsil'] # Define who's eligible for ablation
-    ablation7  = hpv.treat_num(eligibility=hsils7, prob=ablate_prob, product='ablation', label='ablation') # Administer ablation
-    
-    
-    
-    #sim = hpv.Sim(pars, interventions = [hpv_primary7, cytology7, colpo7, ablation7])
-
-    sim = hpv.Sim(pars) #<-simulation without interventions
+    sim = hpv.Sim(pars) 
 
     #---SET UP CALIBRATION---#
 
@@ -116,9 +97,9 @@ if __name__=="__main__":
 
     #I have added new extended ranges where the best parameters from the [B] cals are near to the sides of the ranges. old ranges commented to the right  
     calib_pars = dict(
-            beta=[0.05, 0.00, 0.20], #still happy
-            f_cross_layer= [0.05, 0, 2], #always close to 0 but as i think this cant be negaative, still happy
-            m_cross_layer= [0.05, 0, 2], #pretty close to 0, not quite aas much aas f, but still i think i cnt extend the range so happy (for 3, this is also super super close to 0)
+            beta=[0.25,0.00,0.50],#[0.05, 0.00, 0.20], #still happy
+            f_cross_layer= [0.15, 0, 1], #always close to 0 but as i think this cant be negaative, still happy
+            m_cross_layer= [0.25, 0, 1], #pretty close to 0, not quite aas much aas f, but still i think i cnt extend the range so happy (for 3, this is also super super close to 0)
             #init_hpv_prev
         )
 
