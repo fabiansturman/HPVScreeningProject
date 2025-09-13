@@ -68,8 +68,9 @@ if __name__=="__main__":
                 debut=dict(f=dict(dist='normal', par1=16.0, par2=3.1), m=dict(dist='normal', par1=16.0, par2=4.1)),
                 mixing = {'m':sophie_married_matrix,
                           'c':sophie_casual_matrix},
-                condoms = dict(m=0.01, c=0.2) #condom usage in (m)arried and (c)asual relationships
+                condoms = dict(m=0.17, c=0.50) #condom usage in (m)arried and (c)asual relationships
                 
+                genotypes     = [16, 18, 'hi5'],
 
                 
                 #NOTE: I think having too many young cancers is probably caused by the debut age being too low <-or it could just be the whole data of that being in shambles, now we have nowhere near enough younger cancers
@@ -96,9 +97,9 @@ if __name__=="__main__":
 
     #I have added new extended ranges where the best parameters from the [B] cals are near to the sides of the ranges. old ranges commented to the right  
     calib_pars = dict(
-            beta=[0.05,0.00,0.20],#[0.05, 0.00, 0.20], #still happy
-            f_cross_layer= [0.05, 0, 2], #always close to 0 but as i think this cant be negaative, still happy
-            m_cross_layer= [0.05, 0, 2], #pretty close to 0, not quite aas much aas f, but still i think i cnt extend the range so happy (for 3, this is also super super close to 0)
+            beta=[0.25,0.00,0.50],#[0.05, 0.00, 0.20], #still happy
+            f_cross_layer= [0.15, 0, 1], #always close to 0 but as i think this cant be negaative, still happy
+            m_cross_layer= [0.25, 0, 1], #pretty close to 0, not quite aas much aas f, but still i think i cnt extend the range so happy (for 3, this is also super super close to 0)
             #init_hpv_prev
         )
 
