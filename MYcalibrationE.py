@@ -70,7 +70,7 @@ if __name__=="__main__":
                           'c':sophie_casual_matrix},
                 condoms = dict(m=0.17, c=0.50), #condom usage in (m)arried and (c)asual relationships
                 
-                genotypes     = [16, 18, 'hi5'],
+                genotypes     = ['hpv16', 'hpv18', 'hi5'],
 
                 init_hpv_prev = {
                     'age_brackets'  : np.array([  12,   25,   34,   44,  54,   64, 150]),
@@ -79,8 +79,8 @@ if __name__=="__main__":
                 },
 
                 init_hpv_dist = {
-                    '16': 0.023,
-                    '18': 0.009,
+                    'hpv16': 0.023,
+                    'hpv18': 0.009,
                     'hi5':  0.022 #HPV 33 is not listed as one of the top 10 most prevalent in general population in (), so we can assume its prevalence is at most 0.004 - so not adding this to the sum
                 }, #(note, this measure will be rescaled to a prob distribution by hpvsim.utils.choose_w)
 
