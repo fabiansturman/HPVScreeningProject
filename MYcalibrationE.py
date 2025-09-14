@@ -142,7 +142,9 @@ if __name__=="__main__":
         #"C:/Users/fabia/Documents/Uni/DPhil/SophieHPV/HPVsim_FABIAN/data/d2/new_cervical_cancer_cases_UNIFIED.csv"] #for this data, i am assuming 'cancers' is the number of newly detected cancers in a year; but I suppose the same assumption is the case if I were to use 'cancer_incidence'
         #"C:/Users/fabia/Documents/Uni/DPhil/SophieHPV/HPVsim_FABIAN/data/d2/new_cervical_cancer_cases_2012to27.csv"]
         
-        "data\\d2\\new_cervical_cancer_cases_2012to27.csv"]
+        "data\\d2\\new_cervical_cancer_cases_2012to27.csv",
+        "data\\d3\\mesherHPVCancerDist.csv",
+        ]
 
     # List extra results that we don't have data on, but wish to include in the
     # calibration object so we can plot them.
@@ -157,11 +159,11 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000, #50
-        n_workers=5,#12, #2
+        n_workers=12,#12, #2
 
         keep_db=True,
-        name="CalibrationRawResults\\d2Cal_14Sep25_ZB_E0_2"
-  
+        name="CalibrationRawResults\\d2Cal_14Sep25_XPS_EB_1"
+
     )
 
     #---PERFORM CALIBRATION---#
