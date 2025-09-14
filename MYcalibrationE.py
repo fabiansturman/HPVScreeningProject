@@ -157,10 +157,10 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000, #50
-        n_workers=12,#12, #2
+        n_workers=5,#12, #2
 
         keep_db=True,
-        name="CalibrationRawResults\\d2Cal_14Sep25_XPS_E0_1"
+        name="CalibrationRawResults\\d2Cal_14Sep25_ZB_E0_2"
   
     )
 
