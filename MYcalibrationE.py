@@ -130,7 +130,7 @@ if __name__=="__main__":
         ),
         hi5=dict(
             cin_fn=dict(k=[0.5, 0.0, 1.0]),
-            dur_cin=dict(par1=[6, 1, 12])
+            dur_cin=dict(par1=[6, 1, 12]),
         )
     )
 
