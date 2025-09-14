@@ -72,6 +72,22 @@ if __name__=="__main__":
                 
                 genotypes     = [16, 18, 'hi5'],
 
+                init_hpv_prev = {
+                    'age_brackets'  : np.array([  12,   25,   34,   44,  54,   64, 150]),
+                    'm'             : np.array([ 0.0, 0.25, 0.15,   0.075,  0.06,   0.06, 0.03]),
+                    'f'             : np.array([ 0.0,0.25, 0.15,   0.075,  0.06,   0.06, 0.03])
+                },
+
+                init_hpv_dist = {
+                    '16': 0.023
+                    '18': 0.009
+                    'hi5':  0.022 #HPV 33 is not listed as one of the top 10 most prevalent in general population in (), so we can assume its prevalence is at most 0.004 - so not adding this to the sum
+                } #(note, this measure will be rescaled to a prob distribution by hpvsim.utils.choose_w)
+
+
+
+                #TODO: get analysers which can test my intiial considitons are what i want them to be, that is, I am setting the parameters correctly
+
                 
                 #NOTE: I think having too many young cancers is probably caused by the debut age being too low <-or it could just be the whole data of that being in shambles, now we have nowhere near enough younger cancers
                     #^or because of the mixing matrices - looks like perhaps adding sophies mixing matrices helps things?
@@ -100,7 +116,7 @@ if __name__=="__main__":
             beta=[0.25,0.00,0.50],#[0.05, 0.00, 0.20], #still happy
             f_cross_layer= [0.15, 0, 1], #always close to 0 but as i think this cant be negaative, still happy
             m_cross_layer= [0.25, 0, 1], #pretty close to 0, not quite aas much aas f, but still i think i cnt extend the range so happy (for 3, this is also super super close to 0)
-            #init_hpv_prev
+            
         )
 
     genotype_pars = dict(
@@ -112,7 +128,10 @@ if __name__=="__main__":
             cin_fn=dict(k=[0.5, 0.0, 1.0]),#dict(k=[0.5, 0.2, 1.0]), haappy now these cn be v small for both caals, it does seem to waant to be quite small
             dur_cin=dict(par1=[6, 1, 12])#dict(par1=[6, 4, 12]) these seem to waant to be big in 2 and 3, but i wamnder if th9is is because of asymmtery with range of 16, so first lets make them match
         )
-        #TODO: dont i want to do the sme with hi5 then??
+        hi5=dict(
+            cin_fn=dict(k=[0.5, 0.0, 1.0])
+            dur_cin=dict(par1=[6, 1, 12])
+        )
     )
 
     # List the datafiles that contain data that we wish to compare the model to:
@@ -138,10 +157,10 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000, #50
-        n_workers=5,#12, #2
+        n_workers=12,#12, #2
 
         keep_db=True,
-        name="CalibrationRawResults\\d2Cal_12Sep25_XPS_D6"
+        name="CalibrationRawResults\\d2Cal_14Sep25_XPS_E0_1"
   
     )
 
