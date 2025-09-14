@@ -127,9 +127,9 @@ if __name__=="__main__":
         hpv18=dict(
             cin_fn=dict(k=[0.5, 0.0, 1.0]),#dict(k=[0.5, 0.2, 1.0]), haappy now these cn be v small for both caals, it does seem to waant to be quite small
             dur_cin=dict(par1=[6, 1, 12])#dict(par1=[6, 4, 12]) these seem to waant to be big in 2 and 3, but i wamnder if th9is is because of asymmtery with range of 16, so first lets make them match
-        )
+        ),
         hi5=dict(
-            cin_fn=dict(k=[0.5, 0.0, 1.0])
+            cin_fn=dict(k=[0.5, 0.0, 1.0]),
             dur_cin=dict(par1=[6, 1, 12])
         )
     )
