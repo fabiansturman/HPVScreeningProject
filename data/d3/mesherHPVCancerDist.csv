@@ -1,4 +1,4 @@
 ﻿year,name,genotype,value
-2011,cancerous_genotype_dist,16,67.9
-2011,cancerous_genotype_dist,18,19
-2011,cancerous_genotype_dist,hrhpv,16.1
+2011,cancerous_genotype_dist,16,0.679
+2011,cancerous_genotype_dist,18,0.19
+2011,cancerous_genotype_dist,hrhpv,0.161

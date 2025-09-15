@@ -61,7 +61,7 @@ sophie_casual_matrix = np.array(sophie_casual_matrix)
 
 if __name__=="__main__":
     #---SET UP SIMULATION TO CALIBRATE---#
-    pars = dict(n_agents= 100e3,#100e3,#40e4,#20e4, #20e3, 
+    pars = dict(n_agents= 1e3,#100e3,
                 start=1980, end=2017, dt=0.25, #start=1980, end=2020, dt=0.25, 
                 location='united kingdom', 
                 verbose=-1,
@@ -143,7 +143,7 @@ if __name__=="__main__":
         #"C:/Users/fabia/Documents/Uni/DPhil/SophieHPV/HPVsim_FABIAN/data/d2/new_cervical_cancer_cases_2012to27.csv"]
         
         "data\\d2\\new_cervical_cancer_cases_2012to27.csv",
-        "data\\d3\\mesherHPVCancerDist.csv",
+        "data\\d3\\mesherHPVCancerDist.csv", 
         ]
 
     # List extra results that we don't have data on, but wish to include in the
@@ -159,10 +159,10 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000, #50
-        n_workers=12,#12, #2
+        n_workers=8, #5
 
         keep_db=True,
-        name="CalibrationRawResults\\d2Cal_14Sep25_XPS_EB_1"
+        name="CalibrationRawResults\\d2Cal_14Sep25_XPS_EB_2"
 
     )
 
