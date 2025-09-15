@@ -15,6 +15,9 @@ import matplotlib.pyplot as plt
 #Name for the dummy calibration
 cal_name = "CalibrationRawResults\\d2Cal_10Sep25_101"
 
+#TODO: need to add genotype tracking stuff here tooooooo for the genotype data file
+
+
 #Number of repeat runs for each parameter set
 repeat_runs = 5
 
