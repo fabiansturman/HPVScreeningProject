@@ -61,7 +61,7 @@ sophie_casual_matrix = np.array(sophie_casual_matrix)
 
 if __name__=="__main__":
     #---SET UP SIMULATION TO CALIBRATE---#
-    pars = dict(n_agents= 1e3,#100e3,
+    pars = dict(n_agents= 100e3,
                 start=1980, end=2017, dt=0.25, #start=1980, end=2020, dt=0.25, 
                 location='united kingdom', 
                 verbose=-1,
@@ -162,7 +162,7 @@ if __name__=="__main__":
         n_workers=8, #5
 
         keep_db=True,
-        name="CalibrationRawResults\\d2Cal_14Sep25_XPS_EB_2"
+        name="CalibrationRawResults\\d2Cal_14Sep25_XPS_EB_3"
 
     )
 
