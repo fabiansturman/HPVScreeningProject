@@ -131,6 +131,7 @@ if __name__=="__main__":
         hi5=dict(
             cin_fn=dict(k=[0.5, 0.0, 1.0]),
             dur_cin=dict(par1=[6, 1, 12]),
+            rel_beta=[0.9,0,1]
         )
     )
 
@@ -162,7 +163,7 @@ if __name__=="__main__":
         n_workers=8, #5
 
         keep_db=True,
-        name="CalibrationRawResults\\d2Cal_14Sep25_ZB_EB_4"
+        name="CalibrationRawResults\\d2Cal_15Sep25_XPS_EB_5"
 
     )
 
