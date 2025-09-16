@@ -1,1 +1,4 @@
 mesherHPVCancerDist.csv: https://doi.org/10.1136/jclinpath-2014-202681
+
+new_cervical_cancer_cases_ENGSCALED1P19TOUK: data from 2012-2017 is from ONS 'cervical cancer registration statistics England' data, scaled up by 1.19 to match the relative size of the uk population. Data from 2018-2022 is from https://doi.org/10.1016/j.ypmed.2025.108218, similarly scaled up by 1.19 to make England scale to full uk. 
+	^ideally I would add in data from Scotland, Waled, NI to make the UK data proper!
