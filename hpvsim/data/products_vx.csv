@@ -1,0 +1,13 @@
+name,genotype,rel_imm
+bivalent,hpv16,0.965
+bivalent,hpv18,0.965
+bivalent,hi5,0.5
+bivalent,ohr,0.1
+quadrivalent,hpv16,0.965
+quadrivalent,hpv18,0.965
+quadrivalent,hi5,0.5
+quadrivalent,ohr,0.1
+nonavalent,hpv16,0.965
+nonavalent,hpv18,0.965
+nonavalent,hi5,0.965
+nonavalent,ohr,0.1

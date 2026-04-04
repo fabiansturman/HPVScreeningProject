@@ -1,0 +1,5 @@
+mesherHPVCancerDist.csv: https://doi.org/10.1136/jclinpath-2014-202681
+To work out genotype distribution over the population subset with cancer, I add up cases per genotype to group into hi5 and ohr. Although proportions are given as a fraction of total cancers atttributable to hrHPV, because we are only modelling hrHPV in the simulations and this covers over 95% of cancers in real life either way, we just do the proportions with denomintor='subpopulation with cancer attributable to a hrHPV (as opposed to attributable to any HPV)'. This only needs to be done for the ohr type though, the others have the full numbers provided. We use the MLEs provided in table 2.
+
+new_cervical_cancer_cases_ENGSCALED1P19TOUK: data from 2012-2017 is from ONS 'cervical cancer registration statistics England' data, scaled up by 1.19 to match the relative size of the uk population. Data from 2018-2022 is from https://doi.org/10.1016/j.ypmed.2025.108218, similarly scaled up by 1.19 to make England scale to full uk. 
+	

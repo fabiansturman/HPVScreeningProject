@@ -1,0 +1,4 @@
+name,state,genotype,efficacy
+ablation,precin,all,0
+ablation,cin,all,0.95
+ablation,cancerous,all,0
