@@ -9,7 +9,7 @@
 python
 import hpvsim as hpv
 ```
-  You should observe the output 'Loading HPVsim adapted for England Cervical Screening Project.'. If this appears, installation is successful. If not, consult previous steps.
+  You should observe the output `Loading HPVsim adapted for England Cervical Screening Project.`. If this appears, installation is successful. If not, consult previous steps.
 
 ## Disclaimer
 
