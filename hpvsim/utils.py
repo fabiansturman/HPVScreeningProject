@@ -6,7 +6,7 @@ Numerical utilities for running hpvsim.
 
 import numpy as np # For numerics
 import sciris as sc # For additional utilities
-from scipy.stats import norm
+from scipy.stats import norm, exponnorm
 
 
 # What functions are externally visible -- note, this gets populated in each section below
@@ -229,7 +229,7 @@ def logn_percentiles_to_pars(x1, p1, x2, p2):
 __all__ += ['sample', 'get_pdf', 'set_seed']
 
 
-def sample(dist=None, par1=None, par2=None, size=None, **kwargs):
+def sample(dist=None, par1=None, par2=None, par3=None, size=None, **kwargs):
     '''
     Draw a sample from the distribution specified by the input. The available
     distributions are:
@@ -244,11 +244,13 @@ def sample(dist=None, par1=None, par2=None, size=None, **kwargs):
     - 'neg_binomial'  : negative binomial distribution with mean=par1 and k=par2; converges to Poisson with k=∞
     - 'beta'          : beta distribution with alpha=par1 and beta=par2;
     - 'gamma'         : gamma distribution with shape=par1 and scale=par2;
+    - 'exponnorm'     : exponentially modified Gaussian distribution with K=par1, loc=par2, scale=par3
 
     Args:
         dist (str):   the distribution to sample from
         par1 (float): the "main" distribution parameter (e.g. mean)
         par2 (float): the "secondary" distribution parameter (e.g. std)
+        par3 (float): the "tertiary" distribution parameter (e.g. scale in exponnorm)
         size (int):   the number of samples (default=1)
         kwargs (dict): passed to individual sampling functions
 
@@ -288,6 +290,7 @@ def sample(dist=None, par1=None, par2=None, size=None, **kwargs):
         'neg_binomial1',
         'beta',
         'gamma',
+        'exponnorm'
     ]
 
     # Ensure it's an integer
@@ -303,9 +306,10 @@ def sample(dist=None, par1=None, par2=None, size=None, **kwargs):
     elif dist == 'poisson':           samples = n_poisson(rate=par1, n=size, **kwargs) # Use Numba version below for speed
     elif dist == 'poisson1':          samples = n_poisson(rate=par1, n=size, **kwargs)+1 # Add 1
     elif dist == 'neg_binomial':      samples = n_neg_binomial(rate=par1, dispersion=par2, n=size, **kwargs) # Use custom version below
-    elif dist == 'neg_binomial1':      samples = n_neg_binomial(rate=par1, dispersion=par2, n=size, **kwargs) +1 # Add 1
+    elif dist == 'neg_binomial1':     samples = n_neg_binomial(rate=par1, dispersion=par2, n=size, **kwargs) +1 # Add 1
     elif dist == 'beta':              samples = np.random.beta(a=par1, b=par2, size=size, **kwargs)
     elif dist == 'gamma':             samples = np.random.gamma(shape=par1, scale=par2, size=size, **kwargs)
+    elif dist == 'exponnorm':         samples = exponnorm.rvs(K=par1, loc=par2, scale=par3, size=size, **kwargs)
     elif dist in ['lognorm', 'lognormal', 'lognorm_int', 'lognormal_int']:
         if (sc.isnumber(par1) and par1>0) or (sc.checktype(par1,'arraylike') and (par1>0).all()):
             mean  = np.log(par1**2 / np.sqrt(par2**2 + par1**2)) # Computes the mean of the underlying normal distribution
