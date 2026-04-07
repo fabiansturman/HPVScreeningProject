@@ -4,7 +4,7 @@ import numpy as np
 
 import numpy as np
 
-import pickle
+from scenario_parameterisation import calibration_code  #import the basic name of this calibration according to the parameterisation of the model we are calibrating to
 
 
 
@@ -59,12 +59,12 @@ if __name__=="__main__":
     )
 
     # List the datafiles that contain data that we wish to compare the model to:
-    datafiles=["project_modelling/caldata/new_cervical_cancer_cases_ENGSCALED1P19TOUK_START.csv",
-               "project_modelling/caldata/mesherHPVCancerDist.csv"]
+    datafiles=["project_modelling/real_world_data/new_cervical_cancer_cases_ENGSCALED1P19TOUK_START.csv",
+               "project_modelling/real_world_data/mesherHPVCancerDist.csv"]
 
 
     # Create the calibration object, run it, and plot the results
-    name =  "project_modelling/CalibrationRawResults/Apr4_1_TEST" # "CalibrationRawResults/Feb14_1" #"CalibrationRawResults/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr4_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,

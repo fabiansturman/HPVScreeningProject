@@ -25,6 +25,7 @@ from InterventionAlgorithms import NHS_2025_lambdamu, NHS_Vacc
 from basePars import base_pars
 import hpvsim as hpv
 
+from scenario_parameterisation import cal_filename  #import the name of this calibration according to the parameterisation of the model we are calibrating to
 
 
 #Whether to plot for start years (2012-2018 + 2011 cancerous genotype data) or end years (2019-2022)
@@ -32,7 +33,7 @@ plot_start = True
 
 
 #Name for the dummy calibration
-cal_name = "CalibrationRawResults/dummy_15Feb26_102"
+cal_name = "calibration_results/dummy_15Feb26_102"
 
 #Simulation start and end dates
 start = 1980
@@ -48,7 +49,7 @@ cancerous_genotype_dist_TRUEDATA = [0.677,0.188,0.163,0.059] #hpv16, hpv18, hi5,
 repeat_runs = 10
 
 #Load in final calibration
-with open('finalCalibration.pickle', 'rb') as file:
+with open(cal_filename, 'rb') as file:
     loadeddata = pickle.load(file)
 
 final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
@@ -69,7 +70,7 @@ if __name__=="__main__":
     calib = hpv.Calibration(
         sim,
         calib_pars=calib_pars,
-        datafiles= ["caldata/mesherHPVCancerDist.csv"],
+        datafiles= ["project_modelling/real_world_data/mesherHPVCancerDist.csv"],
         total_trials=1,
         n_workers=1,
         keep_db=True,
@@ -83,7 +84,7 @@ if __name__=="__main__":
     az_cancers = hpv.age_results(
         result_args=sc.objdict(
             cancers=sc.objdict(
-                datafile="caldata/new_cervical_cancer_cases_ENGSCALED1P19TOUK_START.csv" if plot_start else "caldata/new_cervical_cancer_cases_ENGSCALED1P19TOUK_END.csv"
+                datafile="project_modelling/real_world_data/new_cervical_cancer_cases_ENGSCALED1P19TOUK_START.csv" if plot_start else "project_modelling/real_world_data/new_cervical_cancer_cases_ENGSCALED1P19TOUK_END.csv"
             ),
         )
     )
@@ -197,7 +198,7 @@ if __name__=="__main__":
             positions = np.arange(1,1+len(cancers_bins)))
         
         #Overlay plot from datafile
-        datafilesource = f"caldata/new_cervical_cancer_cases_ENGSCALED1P19TOUK_{year}.csv" 
+        datafilesource = f"project_modelling/real_world_data/new_cervical_cancer_cases_ENGSCALED1P19TOUK_{year}.csv" 
         df = pd.read_csv(datafilesource)
         true_data = df['value']
         true_data.tolist()
