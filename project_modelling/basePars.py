@@ -19,11 +19,12 @@ base_pars = dict(n_agents= 200_000,
                 start=start, end=end, dt=0.25, 
                 location='united kingdom', 
                 verbose=-1,
-                debut=dict(f=dict(dist='normal', par1=16.0, par2=3.1), m=dict(dist='normal', par1=16.0, par2=4.1)),
+                debut=dict(f=dict(dist='exponnorm', par1=2.041, par2=14.862, par3=1.245), m=dict(dist='exponnorm', par1=1.792, par2=14.600, par3=1.455)),
                 mixing = {'m':married_matrix,
                           'c':casual_matrix},
                 condoms = dict(m=0.17, c=0.50), #condom usage in (m)arried and (c)asual relationships
-                
+
+
                 genotypes     = ['hpv16', 'hpv18', 'hi5', 'ohr'],
 
                 init_hpv_prev = {
