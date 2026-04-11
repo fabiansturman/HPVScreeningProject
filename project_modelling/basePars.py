@@ -39,9 +39,6 @@ base_pars = dict(n_agents= 200_000,
                     'ohr': 2.1,
                 }, #(note, this measure will be rescaled to a prob distribution by hpvsim.utils.choose_w)
 
-                interventions = NHS_2025_lambdamu.get_interventions(l=1, m=1) + NHS_Vacc.vaccinations,
-                    #TODO: add catchup vacc by adding eligibility by age, sex, and vacc status??
-
                 #TODO: get analysers which can test my intiial considitons are what i want them to be, that is, I am setting the parameters correctly
                 burnin = 20,
                 )

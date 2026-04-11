@@ -1,13 +1,3 @@
-"""
-This file defines the parameterisation for a round of result-generation. 
-It builds on the parameterisation defined in base_pars, the intervention csv files, and calibrated parameters by adding on specific interventions we are modelling for results in this scenario.
-
-USAGE:
-    -> Set the parameters in this file and then run 'result_generation.py' to populate a file of results.
-    -> Import this file (so that it is run and {cal_filename} is generated) when a calibration is performed to name the calibration according to the sensitivity-analysis scenario we are calibrating to
-"""
-
-
 
 # Imports
 import copy
@@ -17,7 +7,18 @@ from basePars import base_pars
 from InterventionAlgorithms import NHS_2025_lambdamuForVaccCohortsOnly, NHS_2025_lambdamu, NHS_Vacc, GlobalScreeningParameters
 
 
+##THE FOLLOWING MAY BE CHANGED TO SET DIFFERENT INTERVENTIONS##
+screening_algorithm_stub_name = '5_15' #set the name we will be using for screening algorithms
+screening_algorithm = NHS_2025_lambdamuForVaccCohortsOnly.get_interventions(l=1, m=3) #set the screening interventions being used
 
+vaccination_algorithm = NHS_Vacc.vaccinations
+
+
+##THE FOLLOWING MAY BE CHANGED TO SET DIFFERENT SETS OF SEEDS OVER WHICH TO GENERATE FINAL RESULTS##
+seeds = [0,1,2,3] # Define seeds we are generating the results over (these raw seeds will be offset by parameterisation number, so that we get a much wider set of seeds when iterating over different parameters from the calibration )
+
+
+##THE FOLLOWING MAY BE CHANGED *WITH CAUTION* TO DEFINE DIFFERENT ENCODING OF SCENARIOS IN FILENAMES##
 # Extract parameter values from GlobalScreeningParameters and interventions themselves, to append to naming of result-files to specify their scenarios (for sensitivity analysis)
 uptk = GlobalScreeningParameters.projected_teen_vaccination_uptake 
 cte = GlobalScreeningParameters.cancer_treatment_effectiveness 
@@ -51,16 +52,16 @@ calibration_code = f"_{twosig(cte)}_{twosig(psp1)}_{twosig(psp2)}_{twosig(ssp)}_
 scenario_code = f"_{twosig(uptk)}{calibration_code}"
 
 
+##DO NOT CHANGE CODE BEYOND THIS POINT##
 
-# Define seeds we are generating the results over (these raw seeds will be offset by parameterisation number, so that we get a much wider set of seeds when iterating over different parameters from the calibration )
-seeds = [0,1,2,3]
+
+
 
 # Define the algorithm we are using in this script and add to basepars
-alg_name = "5_15" + scenario_code
-screening_interventions = NHS_2025_lambdamuForVaccCohortsOnly.get_interventions(l=1, m=3)
+alg_name = screening_algorithm_stub_name + scenario_code
 
 adapted_pars = copy.deepcopy(base_pars)
-adapted_pars['interventions'] =  screening_interventions + NHS_Vacc.vaccinations
+adapted_pars['interventions'] =  screening_algorithm + vaccination_algorithm
 
 # Define the name of the calibration relevant for this
 cal_filename = f"project_modelling/calibration_results/FinalPooledCalibration{calibration_code}"

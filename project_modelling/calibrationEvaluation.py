@@ -25,7 +25,7 @@ from InterventionAlgorithms import NHS_2025_lambdamu, NHS_Vacc
 from basePars import base_pars
 import hpvsim as hpv
 
-from scenario_parameterisation import cal_filename  #import the name of this calibration according to the parameterisation of the model we are calibrating to
+from project_modelling.scenario_configuration import cal_filename  #import the name of this calibration according to the parameterisation of the model we are calibrating to
 
 
 #Whether to plot for start years (2012-2018 + 2011 cancerous genotype data) or end years (2019-2022)

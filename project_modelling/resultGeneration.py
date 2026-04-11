@@ -1078,61 +1078,6 @@ def get_elimination_table(algs, csv_filename,
 
 
 
-def plot_missingness(algs = screening_algorithms):
-    """
-    For all algorithms in screening_algorithms, loads the file and searches for each parameterisation and seed that indexes the data. 
-    Plots grid of seeds on x axis, params on y axis, and squares are highlighted in red if they don't have all the algorithms represented in them - and then we print out which algorithms are semi-represetned for a given pair.
-    """
-    #Populate which seeds and params each alg has done, paired up, and also the total set of seeds and params used across everything
-    
-    seed_param_tuples_by_alg = {alg:[] for alg in algs}
-    seeds = [] #needs to be ordered, hence list, but not to contain duplicates
-    params = []
-    for alg in algs:
-        print(alg)
-        try:
-            with open(f"project_modelling/pickled_results/{alg}.pickle", "rb") as f:
-                seed_param_tuples = pickle.load(f)["popsize_allpop"].keys() #the specific quantity being loaded is irrelevant here; as we assume that if one quantity is saved from a particular run, all quantities are successfully saved, and that data is not deleted from the files
-                seed_param_tuples = set(seed_param_tuples)
-
-                seed_param_tuples_by_alg[alg] = seed_param_tuples
-                
-                seeds_used_here = {seed for seed, _ in seed_param_tuples}
-                seeds = list(set(seeds).union(seeds_used_here))
-
-                params_used_here = {param for _, param in seed_param_tuples}
-                params = list(set(params).union(params_used_here))
-        except:
-            print(f"Unable to open file project_modelling/pickled_results/{alg}.pickle for algorithm {alg}; all data marked red for this algorithm.")
-
-
-    #Populate grid
-    grid = np.zeros(shape=(len(seeds), len(params))) #assumes {seeds} and {params}
-    for seed_index in range(len(seeds)):
-        seed = seeds[seed_index]
-        for param_index in range(len(params)):
-            param = params[param_index]
-
-            offending_algs = []
-            for alg in algs:
-                if (seed, param) not in seed_param_tuples_by_alg[alg]:
-                    offending_algs.append(alg)
-            
-            if len(offending_algs)>0:
-                grid[seed, param] = 1
-                print(f"Seed {seed}, param {param} not represented by algs {offending_algs}")
-    
-    #Plot grid
-    plt.imshow(grid)
-    plt.xticks(params)
-    plt.yticks(seeds)
-    plt.show()
-
-
-    #TODO: make this. determine the semi-represented algrioithms by just lookinga tone of the timeseries (clearly if you have one timseries tou have them all)
-
-
-
 ###- Running a simulation and saving its raw timeseries in relevant pickle file-###
 def run_sim_and_save_raw_result(provided_base_pars, seed:int,
                                 final_cal_data, par_labels,

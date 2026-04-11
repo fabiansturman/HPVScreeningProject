@@ -4,7 +4,7 @@ import numpy as np
 
 import numpy as np
 
-from scenario_parameterisation import calibration_code  #import the basic name of this calibration according to the parameterisation of the model we are calibrating to
+from project_modelling.scenario_configuration import calibration_code  #import the basic name of this calibration according to the parameterisation of the model we are calibrating to
 
 
 

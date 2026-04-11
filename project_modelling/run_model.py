@@ -1,14 +1,16 @@
 #Imports
 import pickle
 from resultGeneration import run_sim_and_save_raw_result
-import scenario_parameterisation
+import project_modelling.scenario_configuration as scenario_configuration
 
 
 #Load in properties of this round of result-generation from scenario_parameterisation.py
-seeds = scenario_parameterisation.seeds
-alg_name = scenario_parameterisation.alg_name
-pars = scenario_parameterisation.adapted_pars
-cal_filename = scenario_parameterisation.cal_filename
+seeds = scenario_configuration.seeds
+alg_name = scenario_configuration.alg_name
+pars = scenario_configuration.adapted_pars
+cal_filename = scenario_configuration.cal_filename
+
+print(f"Loading calibrated parameters from {cal_filename}")
 
 if __name__=="__main__":   
     #Load in calibrated parameter sets
