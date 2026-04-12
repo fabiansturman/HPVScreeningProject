@@ -4,8 +4,8 @@ import numpy as np
 
 import numpy as np
 
-from project_modelling.scenario_configuration import calibration_code  #import the basic name of this calibration according to the parameterisation of the model we are calibrating to
-
+from scenario_configuration import calibration_code  #import the basic name of this calibration according to the parameterisation of the model we are calibrating to
+#NOTE: in the server, doing "from project_mdoelling.scenario_configuration import calibration_code" worked, but on macbook I need to do it as above
 
 
 #Importing interventions from specific models of NHS England interventions
@@ -73,7 +73,7 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000,
-        n_workers=14, #to be changed according to the multiprocessing capability of the hardware being used
+        n_workers=5, #to be changed according to the multiprocessing capability of the hardware being used
 
         keep_db=True,
         name=name
