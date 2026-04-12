@@ -13,7 +13,7 @@ import hpvsim as hpv
 
 ## Result Replication
 
-This repo allows for direct replication of our modelling results as well as exploration of alternative scenarios. Explore a scenario with the following steps:
+This repo allows for direct replication of our modelling results as well as exploration of alternative scenarios. Explore one or many scenarios with the following steps:
 1. *Fix non-cal parameters:* .csv files within `hpvsim/data/` determine characteristics of all interventions other than the 'General Cancer Treatment' intervention (e.g. to change colposcopy specificity, look here). Change these as necessary for the scenario being considered.
 2. *Fix non-cal parameters:* `project_modelling/InterventionAlgorithms/GlobalScreeningParameters.py` defines characteristics of the 'General Cancer Treatment' intervention, compliance parameters, and some basic parameters pertaining to screening algorithgms (when screening is to start, the year at which we switch from the default screening algorithm to a candidate alterantive algorithm, and how long to follow-up individuals who have not accepted a screening invititation). e.g. projected vaccine uptake is set in this file
 3. *Fix non-cal parameters:* `project_modelling/basePars.py` defines all other parameters that do not pertain to screening algorithms (in particular, population level parameters such as initial HPV prevalence and mixing matrices)
@@ -29,6 +29,7 @@ This repo allows for direct replication of our modelling results as well as expl
 
 
 *2026 may not be the year in which screening algorithms switch between the base algoruthm and alternately considered case: if `project_modelling/InterventionAlgorithms/GlobalScreeningParameters.py.switch_year` is changed then replace '2026' with whatever value this variable is.
+
 
 
 ## Disclaimer
