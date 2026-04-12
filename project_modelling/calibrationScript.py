@@ -64,7 +64,7 @@ if __name__=="__main__":
 
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr4_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr12_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
@@ -72,8 +72,8 @@ if __name__=="__main__":
         genotype_pars=genotype_pars,
         datafiles=datafiles,
 
-        total_trials=5,#5000,
-        n_workers=8, #to be changed according to the multiprocessing capability of the hardware being used
+        total_trials=5000,
+        n_workers=14, #to be changed according to the multiprocessing capability of the hardware being used
 
         keep_db=True,
         name=name
