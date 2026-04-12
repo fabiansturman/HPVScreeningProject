@@ -23,12 +23,11 @@ seeds = [0,1,2,3] # Define seeds we are generating the results over (these raw s
 uptk = GlobalScreeningParameters.projected_teen_vaccination_uptake 
 cte = GlobalScreeningParameters.cancer_treatment_effectiveness 
 psp1 = GlobalScreeningParameters.primary_screen_prob_under50 
-psp2 = GlobalScreeningParameters.primary_screen_prob_50andover 
+psp2 = GlobalScreeningParameters.primary_screen_prob_50andover  
 ssp = GlobalScreeningParameters.secondary_screen_prob 
 tsp = GlobalScreeningParameters.third_screen_prob 
-colpo_prob = GlobalScreeningParameters.colpo_prob
-ablate_prob = GlobalScreeningParameters.ablate_prob
-gtp = GlobalScreeningParameters.generalcancertreatment_prob
+ablate_prob = GlobalScreeningParameters.ablate_prob 
+gtp = GlobalScreeningParameters.generalcancertreatment_prob 
 
 dx = pd.read_csv('hpvsim/data/products_dx.csv')
 tx = pd.read_csv('hpvsim/data/products_tx.csv')
@@ -38,6 +37,12 @@ ohr_rel_imm = np.array(vx[(vx["name"] == "nonavalent") &
 cytology_cin_sensitivity = np.array(dx[(dx["name"]=="lbc") &
                                        (dx["state"]=="cin") &
                                        (dx["result"]=="abnormal")]["probability"]).item()
+cytology_specificity = np.array(dx[(dx["name"]=="lbc") &
+                                       (dx["state"]=="susceptible") &
+                                       (dx["result"]=="normal")]["probability"]).item()
+
+sum_male_init_prev = np.sum(base_pars['init_hpv_prev']['m']) #for the cases we are dealing with, it is sufficient to add up all the numbers in our initial male HPV distribution to uniquely identify which of the two distributions we are dealing with
+
 
 def twosig(value):
     #We specify all these numerical scenario parameters by the first two significant figures as 2 digits on their own - this is sufficient to tell apart all cases we are considering in our sensitivity analysis
@@ -47,14 +52,12 @@ def twosig(value):
     
 
     #{calibration_code} uniquely identifies the calibrated set of parameters to use for this sensitivity analysis
-calibration_code = f"_{twosig(cte)}_{twosig(psp1)}_{twosig(psp2)}_{twosig(ssp)}_{twosig(tsp)}_{twosig(colpo_prob)}_{twosig(ablate_prob)}_{twosig(gtp)}_{twosig(ohr_rel_imm)}_{twosig(cytology_cin_sensitivity)}"
+calibration_code = f"_{twosig(cte)}_{twosig(psp1)}_{twosig(psp2)}_{twosig(ssp)}_{twosig(tsp)}_{twosig(ablate_prob)}_{twosig(gtp)}_{twosig(ohr_rel_imm)}_{twosig(cytology_specificity)}_{twosig(cytology_cin_sensitivity)}_{twosig(sum_male_init_prev)}"
     #{scenario_code} uniquely identifies the full scenario being modelled (i.e. the modelling parameters relevant pre-2026 that needs a calibratiob for it, and the assumed later vaccine uptake)
 scenario_code = f"_{twosig(uptk)}{calibration_code}"
 
 
 ##DO NOT CHANGE CODE BEYOND THIS POINT##
-
-
 
 
 # Define the algorithm we are using in this script and add to basepars
