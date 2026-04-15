@@ -85,42 +85,42 @@ if __name__=="__main__":
     ###-RUN THIS CODE FOR GENERATING SANKEY DIAGRAMS just take out the quotations at top and bottom to get a basic Sankey diagram, and add filters to focus on alternative subsets of the population)-###
     
     #ALT FOCUS 0: PRESENTING PATH FOR NON-CANCEROUS AGENTS#
-   # log = filter_intervention_by_not_cancerous(log, 'routine_screening_under50', relative_search_zone=[-1], progress_bar=True)
-   # log = filter_intervention_by_not_cancerous(log, 'routine_screening_50andover', relative_search_zone=[-1], progress_bar=True)
+   # log = filter_intervention_by_cancerous(log, False, 'routine_screening_under50', relative_search_zone=[-1], progress_bar=True)
+   # log = filter_intervention_by_cancerous(log, False, 'routine_screening_50andover', relative_search_zone=[-1], progress_bar=True)
     #ALT FOCUS 0: PRESENTING PATH FOR NON-CANCEROUS AGENTS#
         #NOTE: running ALT FOCUS 0, particularly comparing a run with our modelled colposcopy specificity compared to setting specificity to 1, we see that the manu failed ablations are just from there being so many more healthy agents getting screened that most results are a healthy agents getting an ablation and are victims of a low test specificity (not the ablation itself giving a fail result)
 
     #ALT FOCUS 1: PRESENTING PATH FOR CANCEROUS AGENTS#
-  #  log = filter_intervention_by_cancerous(log, 'routine_screening_under50', relative_search_zone=[-1])
-  #  log = filter_intervention_by_cancerous(log, 'routine_screening_50andover', relative_search_zone=[-1])
+  #  log = filter_intervention_by_cancerous(log, True, 'routine_screening_under50', relative_search_zone=[-1])
+  #  log = filter_intervention_by_cancerous(log, True, 'routine_screening_50andover', relative_search_zone=[-1])
     #ALT FOCUS 1: PRESENTING PATH FOR CANCEROUS AGENTS#
 
     #ALT FOCUS 1: PRESENTING PATH FOR CANCEROUS AGENTS#
-  #  log = filter_intervention_by_cancerous(log, 'routine_screening_under50', relative_search_zone=[-1])
-  #  log = filter_intervention_by_cancerous(log, 'routine_screening_50andover', relative_search_zone=[-1])
+  #  log = filter_intervention_by_cancerous(log,True, 'routine_screening_under50', relative_search_zone=[-1])
+  #  log = filter_intervention_by_cancerous(log,True, 'routine_screening_50andover', relative_search_zone=[-1])
     #ALT FOCUS 1: PRESENTING PATH FOR CANCEROUS AGENTS#
 
     #ALT FOCUS 2: PRESENTING PATH FOR CANCEROUS, OR SOON TO BE CANCEROUS, AGENTS#
- #   log = filter_intervention_by_cancerous(log, 'routine_screening_under50', relative_search_zone=[-1, 0, 1, 2,3,4], progress_bar=True)
- #   log = filter_intervention_by_cancerous(log, 'routine_screening_50andover', relative_search_zone=[-1, 0, 1, 2,3,4], progress_bar=True)
+ #   log = filter_intervention_by_cancerous(log,True, 'routine_screening_under50', relative_search_zone=[-1, 0, 1, 2,3,4], progress_bar=True)
+ #   log = filter_intervention_by_cancerous(log,True, 'routine_screening_50andover', relative_search_zone=[-1, 0, 1, 2,3,4], progress_bar=True)
     #ALT FOCUS 2: PRESENTING PATH FOR CANCEROUS, OR SOON TO BE CANCEROUS, AGENTS#
 
     #ALT FOCUS 3: PRESENTING PATH FOR CIN AGENTS#
- #   log = filter_intervention_by_cin(log, 'routine_screening_under50', relative_search_zone=[-1])
- #   log = filter_intervention_by_cin(log, 'routine_screening_50andover', relative_search_zone=[-1])
+ #   log = filter_intervention_by_cin(log,True,  'routine_screening_under50', relative_search_zone=[-1])
+ #   log = filter_intervention_by_cin(log, True, 'routine_screening_50andover', relative_search_zone=[-1])
     #ALT FOCUS 3: PRESENTING PATH FOR CIN AGENTS# - its reassuring to see that ablation does succeed consistently with this subgroup! it just must not succeed that great overall becasue both cancers and non-cins end up getting passed to it quite a bit?
 
     #ALT FOCUS 4: PRESENTING PATH FOR CIN, OR SOON TO BE CIN, AGENTS#
- #   log = filter_intervention_by_cin(log, 'routine_screening_under50', relative_search_zone=[-1, 0, 1, 2,3,4], progress_bar=True)
- #   log = filter_intervention_by_cin(log, 'routine_screening_50andover', relative_search_zone=[-1, 0, 1, 2,3,4], progress_bar=True)
+ #   log = filter_intervention_by_cin(log, True, 'routine_screening_under50', relative_search_zone=[-1, 0, 1, 2,3,4], progress_bar=True)
+ #   log = filter_intervention_by_cin(log, True, 'routine_screening_50andover', relative_search_zone=[-1, 0, 1, 2,3,4], progress_bar=True)
     #ALT FOCUS 4: PRESENTING PATH FOR CIN, OR SOON TO BE CIN, AGENTS#
 
     #ALT FOCUS 5: PRESENTING PATH JUST FOR UNVACCINATED AGENTS#
-    #log = filter_log_by_vacc(log, keep_vacc=False)
+    #log = filter_intervention_by_vacc(log, keep_vacc=False)
     #ALT FOCUS 5: PRESENTING PATH JUST FOR UNVACCINATED AGENTS#
 
     #ALT FOCUS 6: PRESENTING PATH JUST FOR VACCINATED AGENTS#
-    #log = filter_log_by_vacc(log, keep_vacc=True)
+    #log = filter_intervention_by_vacc(log, keep_vacc=True)
     #ALT FOCUS 6: PRESENTING PATH JUST FOR VACCINATED AGENTS#
 
     #plot_sankey_soft_filter(log, assert_interventions_cleared = False, front_years=20,  tail_years = 6, referral_time_cutoff=8) #20) #8)

@@ -1,17 +1,40 @@
 """
-This file offers a function which, if added to the end of an intervention list, allows for logging of each agent over time
-It also offers some functionality to process/interpret logs - but the use of logs to generate the core results of this project are instead in resultGeneration.py
+This file defines the functionality with which we log information from a HPVsim instance.
+It can be used stand-alone for tracking the state of a HPVsim simulation over time, or can be used in combination with project_modelling/resultGeneration.py to run a HPVsim simulation and get finalised results from it.
+
+
+
+Functions offered (helper functions that are only defined to support the functions listed below are ommitted):
+-> makeLoggingIntervention: returns a log dictionary, and 'logger' which can be added to a simulation's intervention list to log simulation state at each timestep
+        - each log is a dictionary of states at each timestep, indexed by timestep, i.e. {t: 'simulation state at time t'},
+            where 'simulation state at time t' = {name of quantity: value of quantity}. 
+            See docstring of log_current_state for info.
+
+-> soft_filter_by_time: filters a log by removing all (outcomes from) interventions other than the primary screens that happened between specified timepoints, and the interventions which occured as a followup from these primary screens (with follow-up defined recursively)
+-> filter_intervention_by_partition: for each logged intervention, filters out all outcomes from the intervention for an agent not in the specifed partition (partitions can be agents which are 'alive', 'susceptible', 'cancerous' etc)
+    -> filter_intervention_by_cancerous: the partition of included agents are those with/without (as specified in parameter) cancer (by default: checking the cancer state in previous timestep)
+    -> filter_intervention_by_cin: the partition of included agents are those in/not in (as specified in parameter) CIN state (by default: checking the CIN state in previous timestep)
+    -> filter_intervention_by_vacc: the partition of included agents are those who have/have not (as specified in parameter) been vaccinated 
+
+-> get_timeseries: Extracts a timeseries from a log, given a 'functional_snapshot_extractor' (i.e. a function (log, timepoint)->value we want to track at that timepoint)
+    -> get_boolean_partition_size_timeseries: Extracts timeseries of the number of living agents labelled as 'True' for the specified boolean property (where that boolean property needs to be recorded in our log, as in 'log_current_state', e.g. 'alive', 'inactive', etc) 
+    -> get_cumulative_doses_timeseries: Extracts timeseries of the total number of HPV vaccine doses (of any type) administered so far
+    -> get_vaccinated_proportion_timeseries: Extracts timeseries of the proportion of the adult population that has been administered at least a specified number of doses of some HPV vaccine
+    -> get_intervention_timeseries: For the intervention with specified label, returns two timeseries to characterise the intervention over time:
+                                            i)  Timeseries of the totla number of intervention usages at each timepointr
+                                            ii) Timseries where at each timepoint we have the number of outcomes of each type from this intervention (which, according to a parameter, may be normalised to form a categorical distribution at each timepoint)
+
+-> plot_sankey: plots a Sankey diagram of the flow of agents through the specified interventions, as logged in the provided log
+-> plot_sankey_soft_filter: first does a soft-filter of the log to clip away some years from the start and end (as specified in parmeters), with the idea that this will stop us biasing our Sankey diagram with 'incomplete flows' at the end in particular
 """
+
 #Imports
 from tqdm import tqdm
 import numpy as np
 import pickle
 from copy import deepcopy
-
 from math import ceil
-
 import hpvsim as hpv
-
 import matplotlib.pyplot as plt
 
 
@@ -100,7 +123,6 @@ def makeLoggingIntervention(trackable_interventions_by_label = None):
     logger.label="logger" #logger needs a 'label' attribute, so that it can be safely treated as an intervention within the Sim object
     return logger, log
 
-
 ###-FUNCATIONALITY FOR EDITING A LOG-###
 def soft_filter_by_time(log, start_timepoint, end_timepoint):
     """
@@ -176,35 +198,33 @@ def filter_intervention_by_partition(log, intervention_label, partition_name, co
     
     return log
 
-def filter_intervention_by_cancerous(log, intervention_label, relative_search_zone = [-1], progress_bar = False):
+def filter_intervention_by_cancerous(log, keep_cancerous, intervention_label, relative_search_zone = [-1], progress_bar = False):
     """
+    keep_cancerous (bool): if True, filters out all but cancerous agents; if False, filters out only cancerous agents
     relative_search_zone: a list of numbers that say where to look for existance in a partition. e.g. if [-1,0,1], we include an agent in the outcomes of intervention_label at time t iff at time t-1 OR t OR t+1 it is cancerous. Default is 'if the agent was cancerous just before, or at, this timepoint', noting that they can be modelled to test postivie for HPV and follow through to have cancer cleared all in one timestep.
     progress_bar (bool): whether to show a tqdm process bar on the timesteps done so far
 
-    Returns a copy of {log} where outcomes from {intervention_label} are only recorded if the given agent, at that same timepoint, is in the 'True' parition of 'cancerous' for any genotype
+    Returns a copy of {log} where outcomes from {intervention_label} are only recorded if the given agent, at that same timepoint, is in the 'True'/'False' (according to 'keep_cancerous') parition of 'cancerous' for any genotype
     """
-    return filter_intervention_by_partition(log, intervention_label, 'cancerous', lambda bools:np.any(bools, axis=0), relative_search_zone=relative_search_zone, progress_bar=progress_bar)
+    if keep_cancerous:
+        return filter_intervention_by_partition(log, intervention_label, 'cancerous', lambda bools:np.any(bools, axis=0), relative_search_zone=relative_search_zone, progress_bar=progress_bar)
+    else:
+        return filter_intervention_by_partition(log, intervention_label, 'cancerous', lambda bools:~np.any(bools, axis=0), relative_search_zone=relative_search_zone, progress_bar=progress_bar)
 
-def filter_intervention_by_not_cancerous(log, intervention_label, relative_search_zone = [-1], progress_bar = False):
+def filter_intervention_by_cin(log, keep_cin, intervention_label, relative_search_zone = [-1], progress_bar = False):
     """
-    relative_search_zone: a list of numbers that say where to look for existance in a partition. e.g. if [-1,0,1], we include an agent in the outcomes of intervention_label at time t iff at time t-1 OR t OR t+1 it is cancerous. Default is 'if the agent was cancerous just before, or at, this timepoint', noting that they can be modelled to test postivie for HPV and follow through to have cancer cleared all in one timestep.
-    progress_bar (bool): whether to show a tqdm process bar on the timesteps done so far
-
-    Returns a copy of {log} where outcomes from {intervention_label} are only recorded if the given agent, at that same timepoint, is in the 'False' parition of 'cancerous' for all genotypes
-    """
-    return filter_intervention_by_partition(log, intervention_label, 'cancerous', lambda bools:~np.any(bools, axis=0), relative_search_zone=relative_search_zone, progress_bar=progress_bar)
-
-
-def filter_intervention_by_cin(log, intervention_label, relative_search_zone = [-1], progress_bar = False):
-    """
+    keep_cin (bool): if True, filters out all but cin agents; if False, filters out only cin agents
     relative_search_zone: a list of numbers that say where to look for existance in a partition. e.g. if [-1,0,1], we include an agent in the outcomes of intervention_label at time t iff at time t-1 OR t OR t+1 it is cancerous. Default is 'if the agent was cancerous just before, or at, this timepoint', noting that they can be modelled to test postivie for HPV and follow through to have cancer cleared all in one timestep.
     progress_bar (bool): whether to show a tqdm process bar on the timesteps done so far
     
-    Returns a copy of {log} where outcomes from {intervention_label} are only recorded if the given agent, at that same timepoint, is in the 'True' parition of 'cin' for any genotype
+    Returns a copy of {log} where outcomes from {intervention_label} are only recorded if the given agent, at that same timepoint, is in the 'True'/'False' (as specified by 'keep_cin') parition of 'cin' for any genotype
     """
-    return filter_intervention_by_partition(log, intervention_label, 'cin', lambda bools:np.any(bools, axis=0), relative_search_zone=relative_search_zone, progress_bar=progress_bar)
+    if keep_cin:
+        return filter_intervention_by_partition(log, intervention_label, 'cin', lambda bools:np.any(bools, axis=0), relative_search_zone=relative_search_zone, progress_bar=progress_bar)
+    else:
+        return filter_intervention_by_partition(log, intervention_label, 'cin', lambda bools:~np.any(bools, axis=0), relative_search_zone=relative_search_zone, progress_bar=progress_bar)
 
-def filter_log_by_vacc(log, keep_vacc=True, progress_bar = False):
+def filter_intervention_by_vacc(log, keep_vacc=True, progress_bar = False):
     """
     progress_bar (bool): whether to show a tqdm process bar on the timesteps done so far
 

@@ -20,6 +20,9 @@ if __name__=="__main__":
     par_labels = loadeddata['par_labels']
 
     #Generate results for each seed for the algorithm defined in this script
+
+    #TODO: add some functionality to run the 'initialise_blank_ts_file' code automatically if it is detected that there is no pickle file to save the results to, with some feedback to the user to say what is happening - makes the whole pipeline a bit smoother!
+
     for seed in seeds:
         run_sim_and_save_raw_result(pars, seed,
                                     final_cal_data, par_labels,
