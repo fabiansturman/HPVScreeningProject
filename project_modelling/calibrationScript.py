@@ -62,9 +62,25 @@ if __name__=="__main__":
     datafiles=["project_modelling/real_world_data/new_cervical_cancer_cases_ENGSCALED1P19TOUK_START.csv",
                "project_modelling/real_world_data/mesherHPVCancerDist.csv"]
 
+    """
+    Current cals that are running that I am yet to process into final cals (with their sibling cals)
+
+    -> Apr12_2__8_68_76_55_55_9_9__96_7_13 : COMPELTE this is a cal (on MB) using Sophie's mixing matrices and base sensitivity analysis case otherwise
+    -> Apr12_4__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (done on BMRC, transferred to MB though) using Sophie's mixing matrices and base sensitivity analysis case otherwise
+    -> Apr13_1__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (done on BMRC, transferred to MB though) using Sophie's mixing matrices and base sensitivity analysis case otherwise
+        ^Once these are done, allow the BMRC to be totally in line with my MB (other than tmp files on MB) with github and then I am ready to compile the above cals into a final cal ONLY ONCE THE BELOW 3 CALS ARE DONE AND I HAVE SELECTED MY MIXING MATRIX
+    
+
+    -> Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on MB), using my own mixing matrices (Married dervied from natsal cohabitation data, and Casual according to sexual encounter mixing matrix and base sensitivuty analysis case otehrwise (the sexual encounter mixing matrix hopefully is a good proxy for causal - looks good intuitively as it is a diagnonal with a bit larger entropy than marriage -but  really also includes marriage but hopefully other cal fits for the doubling? maybe not hmm but we will see. I guess we could calibrate condom usage in marriage to serve as a proxy to allow us to alter the effect of the married layer to cover for doubling up?))
+        BASED ON HOW THE ABOVE IS, IT IS WORTH DOING 3 CALS FOR THIS TOO AND COMAPRING. DOING MY MARRIAGE MATRIX AND CASUAL ON MB DID GET AN AMAZING LOSS OF LITERALLY A SMIDGE OVER 14, SO MAYBE THERE IS SOMETHING THERE.
+        ^ but if I do end up using these mixing matrices, do email Robyn to ask if it is OK that I am normalising such that for all i, sum(mixing_matirx[i, :]) = 1. I think it should, looking at the HPVsim github it just looks like this is fed to weight a distribution for female sampling of male agents and so this is ok and shouldnt disrupt the distribution, but it is worth checking!
+
+    ^^^Once the above 6 cals are done I can then be informed about the pair of mixing matrices I select, make the final cal according to the three (or more if i feel like 5 do 5) of the mixing matrix pair i select, and move on! (I really would prefer the latter ones as I can justify where they came from, and they fit a more expected/less noisy shape/'more parsimonious in that it is more simple' shape)^^^
+
+    """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr13_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr14_1_USINGNATSALANDLIT_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
@@ -73,7 +89,7 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000,
-        n_workers=7, #to be changed according to the multiprocessing capability of the hardware being used
+        n_workers=5, #to be changed according to the multiprocessing capability of the hardware being used
 
         keep_db=True,
         name=name
