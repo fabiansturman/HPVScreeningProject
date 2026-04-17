@@ -68,23 +68,25 @@ if __name__=="__main__":
     -> Apr12_2__8_68_76_55_55_9_9__96_7_13 : COMPELTE this is a cal (on MB) using Sophie's mixing matrices and base sensitivity analysis case otherwise
     -> Apr12_4__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (done on BMRC, transferred to MB though) using Sophie's mixing matrices and base sensitivity analysis case otherwise
     -> Apr13_1__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (done on BMRC, transferred to MB though) using Sophie's mixing matrices and base sensitivity analysis case otherwise
-    
+        -show this result still in the appendix
 
     -> Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on MB), using my own mixing matrices (Married dervied from natsal cohabitation data, and Casual according to sexual encounter mixing matrix and base sensitivuty analysis case otehrwise (the sexual encounter mixing matrix hopefully is a good proxy for causal - looks good intuitively as it is a diagnonal with a bit larger entropy than marriage -but  really also includes marriage but hopefully other cal fits for the doubling? maybe not hmm but we will see. I guess we could calibrate condom usage in marriage to serve as a proxy to allow us to alter the effect of the married layer to cover for doubling up?))
     -> Apr15_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (done on BMRC, transferred to MB though), identical setup to the calibration directly above
-    -> Apr15_2_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on MB) identical setup to above
+    -> Apr15_2_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on MB) identical setup to above
                     BASED ON HOW THE ABOVE IS, IT IS WORTH DOING 3 CALS FOR THIS TOO AND COMAPRING. DOING MY MARRIAGE MATRIX AND CASUAL ON MB DID GET AN AMAZING LOSS OF LITERALLY A SMIDGE OVER 14, SO MAYBE THERE IS SOMETHING THERE.
         ^ but if I do end up using these mixing matrices, do email Robyn to ask if it is OK that I am normalising such that for all i, sum(mixing_matirx[i, :]) = 1. I think it should, looking at the HPVsim github it just looks like this is fed to weight a distribution for female sampling of male agents and so this is ok and shouldnt disrupt the distribution, but it is worth checking!
 
-    -> Apr16_1_USINGNATSALANDLIT__65_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a call (on BMRC) doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-        
+    -> Apr16_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on BMRC) doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> Apr17_1__65_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on MB) the same as above
+    -> Apr17_2__65_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on BMRC) the same as above
+
 
     ^^^Once the above 6 cals are done I can then be informed about the pair of mixing matrices I select, make the final cal according to the three (or more if i feel like 5 do 5) of the mixing matrix pair i select, and move on! (I really would prefer the latter ones as I can justify where they came from, and they fit a more expected/less noisy shape/'more parsimonious in that it is more simple' shape)^^^
 
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr16_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr17_2_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
