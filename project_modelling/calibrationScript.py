@@ -77,16 +77,17 @@ if __name__=="__main__":
         ^ but if I do end up using these mixing matrices, do email Robyn to ask if it is OK that I am normalising such that for all i, sum(mixing_matirx[i, :]) = 1. I think it should, looking at the HPVsim github it just looks like this is fed to weight a distribution for female sampling of male agents and so this is ok and shouldnt disrupt the distribution, but it is worth checking!
 
     -> Apr16_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on BMRC) doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr17_1__65_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on MB) the same as above
+    -> Apr17_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on MB) the same as above
     -> Apr17_2__65_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on BMRC) the same as above
 
+    -> Apr18_1__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on MB) doing a Sensitivity Analysis doing a lower bound on Sensitivity Analysis on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
 
     ^^^Once the above 6 cals are done I can then be informed about the pair of mixing matrices I select, make the final cal according to the three (or more if i feel like 5 do 5) of the mixing matrix pair i select, and move on! (I really would prefer the latter ones as I can justify where they came from, and they fit a more expected/less noisy shape/'more parsimonious in that it is more simple' shape)^^^
 
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr17_2_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr18_2_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
@@ -95,7 +96,7 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000,
-        n_workers=9, #to be changed according to the multiprocessing capability of the hardware being used
+        n_workers=7, #to be changed according to the multiprocessing capability of the hardware being used
 
         keep_db=True,
         name=name
