@@ -81,7 +81,9 @@ if __name__=="__main__":
     -> Apr17_2__65_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on BMRC) the same as above
 
     -> Apr18_1__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on MB) doing a Sensitivity Analysis doing a lower bound on Sensitivity Analysis on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-
+    -> Apr18_2__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on XPS) as above
+    
+    
     ^^^Once the above 6 cals are done I can then be informed about the pair of mixing matrices I select, make the final cal according to the three (or more if i feel like 5 do 5) of the mixing matrix pair i select, and move on! (I really would prefer the latter ones as I can justify where they came from, and they fit a more expected/less noisy shape/'more parsimonious in that it is more simple' shape)^^^
 
     """
