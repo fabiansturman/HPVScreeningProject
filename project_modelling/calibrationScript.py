@@ -82,15 +82,15 @@ if __name__=="__main__":
 
     -> Apr18_1__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on MB) doing a Sensitivity Analysis doing a lower bound on Sensitivity Analysis on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr18_2__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on XPS) as above
-    -> Apr18_3__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on BMRC) as above
-    
-    
+    -> Apr18_4__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on BMRC) as above
+
+        
     ^^^Once the above 6 cals are done I can then be informed about the pair of mixing matrices I select, make the final cal according to the three (or more if i feel like 5 do 5) of the mixing matrix pair i select, and move on! (I really would prefer the latter ones as I can justify where they came from, and they fit a more expected/less noisy shape/'more parsimonious in that it is more simple' shape)^^^
 
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr18_3_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr18_4_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
