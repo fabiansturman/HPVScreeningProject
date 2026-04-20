@@ -5,11 +5,10 @@ import numpy as np
 import numpy as np
 
 from scenario_configuration import calibration_code  #import the basic name of this calibration according to the parameterisation of the model we are calibrating to
-#NOTE: in the server, doing "from project_mdoelling.scenario_configuration import calibration_code" worked, but on macbook I need to do it as above
 
 
 #Importing interventions from specific models of NHS England interventions
-from InterventionAlgorithms import NHS_2025_lambdamu, NHS_Vacc
+from InterventionAlgorithms import screeningAlgorithms, NHS_Vacc
 from basePars import base_pars
 
 #NOTE: this calibration is using the NHS alg of 2025+ as an approximation of the full history of NHS screening - note that my F caloibrations show that this works when trainign to all the data, so I may as well go and train on just the start of teh data right now!
@@ -17,7 +16,7 @@ from basePars import base_pars
 if __name__=="__main__":
     #---SET UP SIMULATION TO CALIBRATE---#
     pars = base_pars
-    pars['interventions'] =  NHS_2025_lambdamu.get_interventions(l=1, m=1)  + NHS_Vacc.vaccinations
+    pars['interventions'] =  screeningAlgorithms.get_interventions(v=5,u=5,a=5)  + NHS_Vacc.vaccinations
     pars['end'] = 2025
     
     sim = hpv.Sim(pars) 
@@ -84,13 +83,13 @@ if __name__=="__main__":
 
 
     -> Apr18_1__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr18_2__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on XPS - though if the XPS crashed again before 4000 trials idk maybe i will stop trying to run these cals on XPS and just have 2 cals at any one moment running) as above
+    -> Apr18_2__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on XPS) as above
     -> Apr18_4__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on BMRC, transferred to MB) as above
 
-    -> Apr19_1__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> Apr19_1__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr20_1__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on BMRC) as above
-    -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : SOON-TO-BE-INPROGRESS this is a cal (on MB) as above
-
+    -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on MB) as above
+    
 
             
     ^^^Once the above 6 cals are done I can then be informed about the pair of mixing matrices I select, make the final cal according to the three (or more if i feel like 5 do 5) of the mixing matrix pair i select, and move on! (I really would prefer the latter ones as I can justify where they came from, and they fit a more expected/less noisy shape/'more parsimonious in that it is more simple' shape)^^^
