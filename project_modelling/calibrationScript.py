@@ -89,14 +89,16 @@ if __name__=="__main__":
 
     -> Apr19_1__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr20_1__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on BMRC) as above
-    
-        
+    -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : SOON-TO-BE-INPROGRESS this is a cal (on MB) as above
+
+
+            
     ^^^Once the above 6 cals are done I can then be informed about the pair of mixing matrices I select, make the final cal according to the three (or more if i feel like 5 do 5) of the mixing matrix pair i select, and move on! (I really would prefer the latter ones as I can justify where they came from, and they fit a more expected/less noisy shape/'more parsimonious in that it is more simple' shape)^^^
 
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr20_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr20_2_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
@@ -105,7 +107,7 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000,
-        n_workers=9, #to be changed according to the multiprocessing capability of the hardware being used
+        n_workers=5, #to be changed according to the multiprocessing capability of the hardware being used
 
         keep_db=True,
         name=name

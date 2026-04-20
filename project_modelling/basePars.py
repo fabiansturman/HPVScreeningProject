@@ -23,7 +23,7 @@ casual_matrix = np.array(casual_literature) # np.array(casual_matrix_s) #np.arra
 start = 1980
 end = 2055
 
-base_pars = dict(n_agents= 1000,#200_000, 
+base_pars = dict(n_agents= 200_000, 
                 start=start, end=end, dt=0.25, 
                 location='united kingdom', 
                 verbose=-1,
