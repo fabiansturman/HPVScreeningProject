@@ -1,6 +1,6 @@
 #Imports
 import pickle
-from resultGeneration import run_sim_and_save_raw_result
+from resultGeneration import initialise_blank_ts_file, run_sim_and_save_raw_result
 import project_modelling.scenario_configuration as scenario_configuration
 
 
@@ -19,10 +19,10 @@ if __name__=="__main__":
     final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
     par_labels = loadeddata['par_labels']
 
-    #Generate results for each seed for the algorithm defined in this script
+    #Initialise a blank file to contain the results generated for this algorithm (the function provides the user the option to not override an existing file, if an existing file is detected)
+    initialise_blank_ts_file(algs = [alg_name])
 
-    #TODO: add some functionality to run the 'initialise_blank_ts_file' code automatically if it is detected that there is no pickle file to save the results to, with some feedback to the user to say what is happening - makes the whole pipeline a bit smoother!
-
+    #Generate the raw results
     for seed in seeds:
         run_sim_and_save_raw_result(pars, seed,
                                     final_cal_data, par_labels,
