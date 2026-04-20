@@ -2,3 +2,5 @@ screeningenv/*
 tmp_*
 /hpvsim/__pycache__
 *.pyc
+/hpvsim/data/__pycache__
+/project_modelling/InterventionAlgorithms/__pycache__
