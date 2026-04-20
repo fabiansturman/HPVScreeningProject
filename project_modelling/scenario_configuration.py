@@ -67,7 +67,7 @@ adapted_pars = copy.deepcopy(base_pars)
 adapted_pars['interventions'] =  screening_algorithm + vaccination_algorithm
 
 # Define the name of the calibration relevant for this
-cal_filename = f"project_modelling/calibration_results/FinalPooledCalibration{calibration_code}"
+cal_filename = f"project_modelling/calibration_results/FinalPooledCalibration{calibration_code}.pickle"
 
 
 
