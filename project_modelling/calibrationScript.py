@@ -81,18 +81,17 @@ if __name__=="__main__":
     -> Apr17_2__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on BMRC, transferred to MB) the same as above
         => ** summarised into FinalPooledCalibration_65_68_76_55_55_9_9__96_7_13.pickle **
 
-
     -> Apr18_1__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr18_2__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on XPS) as above
     -> Apr18_4__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on BMRC, transferred to MB) as above
-
+        => ** **
+    
     -> Apr19_1__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr20_1__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on BMRC) as above
     -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on MB) as above
-    
+        => **  **
 
             
-    ^^^Once the above 6 cals are done I can then be informed about the pair of mixing matrices I select, make the final cal according to the three (or more if i feel like 5 do 5) of the mixing matrix pair i select, and move on! (I really would prefer the latter ones as I can justify where they came from, and they fit a more expected/less noisy shape/'more parsimonious in that it is more simple' shape)^^^
 
     """
 

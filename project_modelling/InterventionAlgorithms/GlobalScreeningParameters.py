@@ -14,7 +14,7 @@ projected_teen_vaccination_uptake = 0.8 #0.8 #from 2022 onwards, the probability
 
 primary_screen_prob_under50 = 0.8#0.68 #Probability of a person under 50 taking up their primary screening invitation
 primary_screen_prob_50andover = 0.8#0.76 #Probability of a person 50 or over taking up their primary screening invitation
-secondary_screen_prob = 0.9#0.8 #probability that an agent invited to secondary screening at timepoint T attends within {abandon_followup_invites_threshold} years
+secondary_screen_prob =  0.9#0.8 #probability that an agent invited to secondary screening at timepoint T attends within {abandon_followup_invites_threshold} years
 third_screen_prob =  0.9#0.8  #probability that an agent invited to third screening at timepoint T attends within {abandon_followup_invites_threshold} years
 triage_screen_prob = 1.00
 colpo_prob = 0.95

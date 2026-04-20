@@ -31,7 +31,6 @@ Functions offered (helper functions that are only defined to support the functio
 #Imports
 from tqdm import tqdm
 import numpy as np
-import pickle
 from copy import deepcopy
 from math import ceil
 import hpvsim as hpv
