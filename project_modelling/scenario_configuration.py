@@ -4,12 +4,18 @@ import copy
 import pandas as pd
 import numpy as np
 from basePars import base_pars
-from InterventionAlgorithms import NHS_2025_lambdamuForVaccCohortsOnly, NHS_2025_lambdamu, NHS_Vacc, GlobalScreeningParameters
+from InterventionAlgorithms import screeningAlgorithms, NHS_Vacc, GlobalScreeningParameters
 
 
 ##THE FOLLOWING MAY BE CHANGED TO SET DIFFERENT INTERVENTIONS##
 screening_algorithm_stub_name = '5_5' #set the name we will be using for screening algorithms
-screening_algorithm = NHS_2025_lambdamuForVaccCohortsOnly.get_interventions(l=1, m=1) #set the screening interventions being used
+screening_algorithm = screeningAlgorithms.get_interventions(v=100,u=10,a=10)
+"""                                                         ^
+                                                            v = screening interval for vaccinated individuals
+                                                            u = screening interval for unvaccinated vaccine-elgiible individuals
+                                                            a = screening interval for non-vaccine-eligible individuals
+"""
+
 
 vaccination_algorithm = NHS_Vacc.vaccinations
 
