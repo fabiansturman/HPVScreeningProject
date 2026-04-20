@@ -69,7 +69,7 @@ from tqdm import tqdm
 import hpvsim as hpv
 from hpvsim.parameters import get_genotype_pars
 from basePars import base_pars
-from InterventionAlgorithms import NHS_2025_lambdamu, NHS_Vacc
+from InterventionAlgorithms import screeningAlgorithms, NHS_Vacc
 from InterventionAlgorithms.simulationLogging import makeLoggingIntervention
 
 import numpy as np
@@ -1669,13 +1669,14 @@ def ttest_powerplot(ax, lower_std_bound, upper_std_bound, effect_size_lower=-4, 
 if __name__=="__main__":
     fig, ax = plt.subplots(1,2)
 
-    plot_paired_difference_tss(ax[0], 'prev_cancers_ud5y_unvaccpop_alltypes', True,
-                          '5_5_8_8_68_76_55_55_9_9__96_7_13',
-                            '5_15_8_8_68_76_55_55_9_9__96_7_13',
+
+    plot_paired_difference_tss(ax[0], 'inc_infectious_fullpop_alltypes', True,
+                          '10_15_8_8_68_76_55_55_9_9__96_7_13',
+                            '15_15_8_8_68_76_55_55_9_9__96_7_13',
                                     True,
                                     False,
                                             ax_histogram=ax[1],
-                                                    start_tp=140,
+                                                    start_tp=0,
                                                     end_tp=200        )
 
 
