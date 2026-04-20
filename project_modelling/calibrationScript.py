@@ -82,9 +82,9 @@ if __name__=="__main__":
         => ** summarised into FinalPooledCalibration_65_68_76_55_55_9_9__96_7_13.pickle **
 
     -> Apr18_1__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr18_2__8_68_76_36_36_8_8__96_7_13 : INPROGRESS this is a cal (on XPS) as above
+    -> Apr18_2__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on XPS, transferred to MB) as above
     -> Apr18_4__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on BMRC, transferred to MB) as above
-        => ** **
+        => ** summarised into FinalPooledCalibration_8_68_76_36_36_8_8__96_7_13.pickle **
     
     -> Apr19_1__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr20_1__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on BMRC) as above
