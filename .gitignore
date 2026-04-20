@@ -1,3 +1,4 @@
 screeningenv/*
 tmp_*
 /hpvsim/__pycache__
+*.pyc
