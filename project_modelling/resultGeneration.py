@@ -1667,17 +1667,17 @@ def ttest_powerplot(ax, lower_std_bound, upper_std_bound, effect_size_lower=-4, 
 
 
 if __name__=="__main__":
-    fig, ax = plt.subplots(1,2)
+    fig, ax = plt.subplots(1,1)
 
 
-    plot_paired_difference_tss(ax[0], 'inc_infectious_fullpop_alltypes', True,
+    """plot_paired_difference_tss(ax[0], 'inc_infectious_fullpop_alltypes', True,
                           '10_15_8_8_68_76_55_55_9_9__96_7_13',
                             '15_15_8_8_68_76_55_55_9_9__96_7_13',
                                     True,
                                     False,
                                             ax_histogram=ax[1],
                                                     start_tp=0,
-                                                    end_tp=200        )
+                                                    end_tp=200        )"""
 
 
     """plot_x_per_y(ax,'inc_cancers_vaccpop_alltypes','routine_screens_vaccpop',
@@ -1687,16 +1687,21 @@ if __name__=="__main__":
                    False
                    )"""
 
-    """plot_quant_over_time(ax,
-                         'prev_cin_vaccpop_alltypes', #eligibleun
+    plot_quant_over_time(ax,
+                         'routine_screens_ineligiblepop', #eligibleun
                          True, #normalise_per_100k
-                         ['5_5_8_8_68_76_55_55_9_9__96_7_13', '5_15_8_8_68_76_55_55_9_9__96_7_13'],
+                         ['5_5_8_8_68_76_55_55_9_9__96_7_13', 
+                          '5_none_8_8_68_76_55_55_9_9__96_7_13',
+                          '5plusnone_8_8_68_76_55_55_9_9__96_7_13',
+                          'none_none_8_8_68_76_55_55_9_9__96_7_13'],
                          False, #show_quartiles
                          True,#show_normal_CI
-                         alg_labels = {'5_5_8_8_68_76_55_55_9_9__96_7_13':'Current',
-                                       '5_15_8_8_68_76_55_55_9_9__96_7_13': 'Proposed'}
+                         alg_labels = {'5_5_8_8_68_76_55_55_9_9__96_7_13':'5_5', 
+                                        '5_none_8_8_68_76_55_55_9_9__96_7_13':'5_none',
+                                        '5plusnone_8_8_68_76_55_55_9_9__96_7_13':'5plusnone',
+                                        'none_none_8_8_68_76_55_55_9_9__96_7_13':'none_none'}
                          )
-    plt.legend()"""
+    plt.legend()
     plt.show()
 
     """
