@@ -12,14 +12,14 @@ cancer_treatment_effectiveness = 0.8
 #Set compliance levels
 projected_teen_vaccination_uptake = 0.8 #0.8 #from 2022 onwards, the probability that an agent in the UK at age 12-13 will take up the HPV vaccine dose offered to them at some point in that time 
 
-primary_screen_prob_under50 = 0.8#0.68 #Probability of a person under 50 taking up their primary screening invitation
-primary_screen_prob_50andover = 0.8#0.76 #Probability of a person 50 or over taking up their primary screening invitation
-secondary_screen_prob =  0.9#0.8 #probability that an agent invited to secondary screening at timepoint T attends within {abandon_followup_invites_threshold} years
-third_screen_prob =  0.9#0.8  #probability that an agent invited to third screening at timepoint T attends within {abandon_followup_invites_threshold} years
+primary_screen_prob_under50 = 0.68 #Probability of a person under 50 taking up their primary screening invitation
+primary_screen_prob_50andover = 0.76 #Probability of a person 50 or over taking up their primary screening invitation
+secondary_screen_prob =  0.8 #probability that an agent invited to secondary screening at timepoint T attends within {abandon_followup_invites_threshold} years
+third_screen_prob =  0.8  #probability that an agent invited to third screening at timepoint T attends within {abandon_followup_invites_threshold} years
 triage_screen_prob = 1.00
 colpo_prob = 0.95
-ablate_prob = 0.95#0.90
-generalcancertreatment_prob = 0.95#0.90
+ablate_prob = 0.90
+generalcancertreatment_prob = 0.90
 
 
 
