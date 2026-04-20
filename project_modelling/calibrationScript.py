@@ -95,8 +95,8 @@ if __name__=="__main__":
     ->
     ->
 
-    -> Apr21_1_ : INPROGRESS this is a cal (on XPS) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-            
+    -> Apr21_1__8_68_76_55_55_9_9__96_7_62 : INPROGRESS this is a cal (on XPS) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+                 
 
     """
 
@@ -110,7 +110,7 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000,
-        n_workers=5, #to be changed according to the multiprocessing capability of the hardware being used
+        n_workers=7, #to be changed according to the multiprocessing capability of the hardware being used
 
         keep_db=True,
         name=name
