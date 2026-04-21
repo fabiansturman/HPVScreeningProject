@@ -96,12 +96,13 @@ if __name__=="__main__":
     ->
 
     -> Apr21_1__8_68_76_55_55_9_9__96_7_62 : INPROGRESS this is a cal (on XPS) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-                 
+    -> Apr21_2__8_68_76_55_55_9_9__96_7_62 : INPROGRESS this is a cal (on BMRC) as above
+
 
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr21_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr21_2_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
@@ -110,7 +111,7 @@ if __name__=="__main__":
         datafiles=datafiles,
 
         total_trials=5000,
-        n_workers=7, #to be changed according to the multiprocessing capability of the hardware being used
+        n_workers=9, #to be changed according to the multiprocessing capability of the hardware being used
 
         keep_db=True,
         name=name
