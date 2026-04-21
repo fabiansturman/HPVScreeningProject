@@ -49,11 +49,9 @@ The functions available in (5) are listed below:
 -> plot_sum_barchart: plots a barchart of total of a quantity, with quartiles shown in superimposed error bars, between two timepoints for the desired selection of algorithms
 -> plot_sum_barchart_all_vacc_levels: as above, but plots the barchart for the provided algorithms alongisde that algorithm with "_LV" and "_HV" appended
     #TODO: ^ update this to plot over vacc levels by changing the name in the way I am encoding it now (i.e.: replacing the relevant '8' with a '6' or '9')
--> get_alg_comparison_grid: plots a grid doing a pairwise comparison between all specified algorithms, in terms of a specified quantity and between two specified timepoints
+-> plot_alg_comparison_grid: plots a grid doing a pairwise comparison between all specified algorithms, in terms of a specified quantity and between two specified timepoints
 -> get_elimination_table: Generates a CSV file of an 'elimination table' for a specified set of algs, data quantity, and timepoints between which to sum, where we report the empirical probability of the sum being under a specified threshold.
     #TODO: ^ as with plot_sum_barchart_all_vacc_levels, update this to work with the new way I am encoding vaccination levels!
-
-
 
 The functions available in (6) are listed below:
 -> ttest_powerplot: plots power curves for a t test, to understand the power of the t-tests represented in the results of (5)
@@ -93,145 +91,129 @@ from colorScheme import natureColorScheme
 """
 sig_level = 0.01
 
-#TODO: make this work with my new result naming
 #screening_algorithm_stems defines the internal naming for all considered algorithms - not accounting for augmenting with sensitivity analyses (i.e. by considering different vaccination levels and different other parameterisations)
-screening_algorithm_stems = ['5_5', '5_7', '5_10', '5_15', '5_20',
-                               '7_7', '7_10', '7_15', '7_20',
-                                      '10_10','10_15','10_20',
-                                              '15_15','15_20',
-                               '5plus7', '5plus10', '5plus15', '5plus20', #NOTE: there is no need to the diagnonal of the matrix here as well, because amounts to identical algorithms as the diagonal of the matrix above
-                                         '7plus10', '7plus15', '7plus20',
-                                                    '10plus15','10plus20',
-                                                               '15plus20',
-                        'none_none', #'none' indicates there is no (asymptomatic) screening at all (hence a lack of an interval itself)
-                        '5_none',
-                        '5plusnone',
+
 ]
-    #Screening algorithms are named according to thier stems (because most plots just contian a single case in terms of the SA, so there is no need to differentiate algorithms by case by default)
-screening_algorithms_labels = {'5_5':'A', 
-                               '5_7':'B',
-                               '5_10':'C',
-                               '5_15':'D', 
-                               '5_20':'5:20',
-                               '7_7':'7:7',
-                               '7_10':'7:10',
-                               '7_15':'7:15', 
-                               '7_20':'7:20',
-                               '10_10':'10:10',
-                               '10_15':'10:15', 
-                               '10_20':'10:20',
-                               '15_15':'15:15', 
-                               '15_20':'15:20',
 
-                               '5plus7':'F',
-                               '5plus10':'G',
-                               '5plus15':'H', 
-                               '5plus20':'5:5+20:20',
-                               '7plus10':'7:7+10:10',
-                               '7plus15':'7:7+15:15', 
-                               '7plus20':'7:7+20:20',
-                               '10plus15':'10:10+15:15', 
-                               '10plus20':'10:10+20:20',
-                               '15plus20':'15:15+20:20',
+screening_algorithm_stems = ['V5U5A5', 'V7U5A5',    'V10U5A5',      'V15U5A5',  'V_U5A5',
+                                                    'V10U7A5',      'V15U7A5',  'V_U7A5', #this is an intermediate stage of algs to consider, with a slightly increased interval for U but nothing crazy
+                                                                    'V15U10A5',             #then this is a later intermediate stage
+                                                                                'V_U15A5'    #this is a late stage with a very large unvacc vacc eligible interval and no screening for vacc
+                                       'V7U7A5',    'V10U10A5',     'V15U15A5', 'V_U_A5',
+                                                    'V10U10A10',    'V15U10A10','V_U10A10',
+                                                                    'V15U15A10','V_U_A10',
+                                                                                'V_U_A_']
 
-                                'none_none':'J', 
-                                '5_none':'E',
-                                '5plusnone':'I',
-}
-#TODO: set up the code so that, by default, these labels are actually used!! currently that is not the case (but a lot of functions do have an alg_labels parameter so this shouldnt be too hard to do, just defining a dictionary that maps 'algname__vacclevel_calpars' to 'algname')
-
-
-using_old_result_names_for_testing = False #obvs take this away once i am generating results with the new naming (and logging/recorded quantities) conventions
-if using_old_result_names_for_testing:
-    #Add low and high vacc as extra logical 'algorithms' (rather than a different heirachical layer of 'vacc. scenario') for simplicity of comparison
-    algorithms = screening_algorithm_stems
-    for i in range(len(algorithms)):
-        algorithm = algorithms[i]
-        algorithms.append(f"{algorithm}_LV")
-        algorithms.append(f"{algorithm}_HV")
-
-
-        #Define the internal names of the quantities being recorded over time (i.e. internal timeseries names); 'result-types'
-    vacc_states = ["_vaccpop", "_unvaccpop", "_allpop"]
-    genotype_states = ["_vacctype", "_unvacctype", "_alltypes"]
-    stems_to_be_split_by_genotype_and_vaccstate = [
-        "inc_infectious",
-        "inc_cin",
-        "inc_cancers",
-        "inc_cancers_diagnosed", 
-        "inc_cancer_deaths",
-        "prev_infectious",
-        "prev_cin",
-        "prev_cancers",
-        "prev_cancers_undiagnosed_after_5_years",#
-    ]
-    stems_to_be_split_by_vaccstate_only = [
-        "routine_screens",
-        "popsize"
-    ]
-
-    data_names = []
-    for stem in stems_to_be_split_by_genotype_and_vaccstate:
-        for vacc_state in vacc_states:
-            for genotype_state in genotype_states:
-                data_names.append(stem+vacc_state+genotype_state)
-    for stem in stems_to_be_split_by_vaccstate_only:
-        for vacc_state in vacc_states:
-            data_names.append(stem+vacc_state)
-
-else:
-    #Logically, we make 'algorithms' and 'scenarios' equivalent - which is justified by broadening the definition of 'algorithm' to refer to the full parameterisation of a HPVsim instance as opposed to just referring to the screening algorithm
+                                                                                
+    #Screening algorithms are named and coloured according to thier stems (because most plots just contian a single case in terms of the SA, so there is no need to differentiate algorithms by case by default)
+labels_by_algorithm_stem = {
+    'V5U5A5':'V5U5A5',
+    'V7U5A5':'V7U5A5',    
+    'V10U5A5':'V10U5A5',      
+    'V15U5A5':'V15U5A5',  
+    'V_U5A5':'V-U5A5',
+                                                    
+    'V10U7A5':'V10U7A5',      
+    'V15U7A5':'V15U7A5',  
+    'V_U7A5':'V-U7A5',
+                                                                    
+    'V15U10A5':'V15U10A5',          
+    'V_U15A5':'V-U15A5',   
     
-    # defining the codes that denote our different sensitivity analyses
-    vacc_cases = ['_6', '_8', '_9'] #these are the codes denoting 60%, 80%, and 90% teen vaccine uptake, respectively
-    cal_cases = { #this dictionary gives the different sensitivity analyses we have considered (other than sensitivity analysis over vaccination levels)
-        'BASE': '_8_68_76_55_55_9_9__96_7_13', #this suffix to resultfile names means we are dealing with the base case of all our parameters
-        'LOWCTE' : '_65_68_76_55_55_9_9__96_7_13'
-    }
-
-    # define the algorithms that we could load in pickle files for (i.e. cartesian product between the screening_algorithm_stems available, the vaccination cases available, and the sensivity analyses we are doing)
-    algorithms = []
-    for screening_algorithm_stem in screening_algorithm_stems:
-        for vacc_case in vacc_cases:
-            for cal_case_key in cal_cases.keys():
-                cal_case_suffix = cal_cases[cal_case_key]
-                algorithms.append(f"{screening_algorithm_stem}{vacc_case}{cal_case_suffix}")
-    #print(algorithms)
+    'V7U7A5':'V7U7A5',    
+    'V10U10A5':'V10U10A5',     
+    'V15U15A5':'V15U15A5', 
+    'V_U_A5':'V-U-A5',
+                                                    
+    'V10U10A10':'V10U10A10',    
+    'V15U10A10':'V15U10A10',
+    'V_U10A10':'V-U10A10',
+    
+    'V15U15A10':'V15U15A10',
+    'V_U_A10':'V-U-A10',
+    'V_U_A_':'V-U-A-',
+}
 
 
-        #Define the internal names of the quantities being recorded over time (i.e. internal timeseries names); 'result-types'
-    vacc_states = ['_fullpop', '_vaccpop', '_unvaccpop', '_eligiblepop', '_ineligiblepop', '_eligibleunvaccpop'] #defines the different kinds of population we are interested in
-    genotype_states = ['_alltypes', '_vacctypes', '_nonvacctypes'] #defines the different groups of HPV genotypes we are interested in
-    stems_to_be_split_by_genotype_and_population = [
-        "inc_infectious",
-        "inc_cin",
-        "inc_cancers",
-        "inc_cancers_diagnosed", 
-        "inc_cancer_deaths",
-        "prev_infectious",
-        "prev_cin",
-        "prev_cancers",
-        "prev_cancers_ud5y",
-    ]
-    stems_to_be_split_by_population_only = [
-        "routine_screens",
-        "popsize"
-    ]
+colors_by_algorithm_stem = {
+    'V5U5A5':natureColorScheme['greens'][-1],
+    'V7U5A5':natureColorScheme['greens'][-2],    
+    'V10U5A5':natureColorScheme['greens'][-3],      
+    'V15U5A5':natureColorScheme['greens'][-4],  
+    'V_U5A5':natureColorScheme['reds'][0],
+                                                    
+    'V10U7A5':natureColorScheme['blues'][-1],      
+    'V15U7A5':natureColorScheme['blues'][-2],  
+    'V_U7A5':natureColorScheme['reds'][1],
+                                                                    
+    'V15U10A5':natureColorScheme['blues'][-3],          
+    'V_U15A5':natureColorScheme['reds'][2],   
+    
+    'V7U7A5':natureColorScheme['yellows'][-1],    
+    'V10U10A5':natureColorScheme['yellows'][-3],     
+    'V15U15A5':natureColorScheme['yellows'][-4], 
+    'V_U_A5':natureColorScheme['reds'][4],
+                                                    
+    'V10U10A10':'black',    
+    'V15U10A10':'black',
+    'V_U10A10':'black',
+    
+    'V15U15A10':'black',
+    'V_U_A10':'black',
+    'V_U_A_':natureColorScheme['reds'][5],
+}
 
-    data_names = []
-    for stem in stems_to_be_split_by_genotype_and_population:
-        for genotype in genotype_states:
-            for population in vacc_states:
-                data_names.append(stem+population+genotype)
-    for stem in stems_to_be_split_by_population_only:
+
+
+#Logically, we make 'algorithms' and 'scenarios' equivalent - which is justified by broadening the definition of 'algorithm' to refer to the full parameterisation of a HPVsim instance as opposed to just referring to the screening algorithm
+# defining the codes that denote our different sensitivity analyses
+vacc_cases = ['_6', '_8', '_9'] #these are the codes denoting 60%, 80%, and 90% teen vaccine uptake, respectively
+cal_cases = { #this dictionary gives the different sensitivity analyses we have considered (other than sensitivity analysis over vaccination levels)
+    'BASE': '_8_68_76_55_55_9_9__96_7_13', #this suffix to resultfile names means we are dealing with the base case of all our parameters
+    'LOWCTE' : '_65_68_76_55_55_9_9__96_7_13'
+}
+
+# define the algorithms that we could load in pickle files for (i.e. cartesian product between the screening_algorithm_stems available, the vaccination cases available, and the sensivity analyses we are doing)
+algorithms = []
+algorithm_labels = {} #will contain default label for plots for each algorithm we define
+algorithm_colors = {} #will contain default color for plotting each algorithm we define
+for screening_algorithm_stem in screening_algorithm_stems:
+    for vacc_case in vacc_cases:
+        for cal_case_key in cal_cases.keys():
+            cal_case_suffix = cal_cases[cal_case_key]
+            alg_name = f"{screening_algorithm_stem}{vacc_case}{cal_case_suffix}"
+            algorithms.append(alg_name)
+            algorithm_labels[alg_name] = labels_by_algorithm_stem[screening_algorithm_stem]
+            algorithm_colors[alg_name] = colors_by_algorithm_stem[screening_algorithm_stem]
+
+
+    #Define the internal names of the quantities being recorded over time (i.e. internal timeseries names); 'result-types'
+vacc_states = ['_fullpop', '_vaccpop', '_unvaccpop', '_eligiblepop', '_ineligiblepop', '_eligibleunvaccpop'] #defines the different kinds of population we are interested in
+genotype_states = ['_alltypes', '_vacctypes', '_nonvacctypes'] #defines the different groups of HPV genotypes we are interested in
+stems_to_be_split_by_genotype_and_population = [
+    "inc_infectious",
+    "inc_cin",
+    "inc_cancers",
+    "inc_cancers_diagnosed", 
+    "inc_cancer_deaths",
+    "prev_infectious",
+    "prev_cin",
+    "prev_cancers",
+    "prev_cancers_ud5y",
+]
+stems_to_be_split_by_population_only = [
+    "routine_screens",
+    "popsize"
+]
+
+data_names = []
+for stem in stems_to_be_split_by_genotype_and_population:
+    for genotype in genotype_states:
         for population in vacc_states:
-            data_names.append(stem+population)
-
-
-
-     #    DO THIS NEXT:   any timeseries in my existing logging functionality useful and an i jsut add that to the pickle files, indexed by seed ? then theres some more where i can use the existing thing but make sepreat timeseries by genotype and then save them in ig? or do they need to be serpeated by genotype here, maybe just have lists from the numpy arrays?
-
-
+            data_names.append(stem+population+genotype)
+for stem in stems_to_be_split_by_population_only:
+    for population in vacc_states:
+        data_names.append(stem+population)
 
 
 
@@ -735,7 +717,7 @@ def run_sim_and_get_infection_histogram(seed:int,
     #Set up simulation base parameters
     base_pars = deepcopy(base_pars)
     base_pars['end']=2025
-    base_pars['interventions'] = [make_snapshot_logs] + NHS_2025_lambdamu.get_interventions(l=1, m=1) + NHS_Vacc.vaccinations + [prevalence_snapshotter]
+    base_pars['interventions'] = [make_snapshot_logs] + screeningAlgorithms.get_interventions(v=5,u=5,a=5) + NHS_Vacc.vaccinations + [prevalence_snapshotter]
     
 
     #Run all the simulations
@@ -985,7 +967,7 @@ def get_total_diffs(data_name, compared_alg, baseline_alg,
 def plot_quant_over_time(ax, 
                          data_name, normalise_per_100k = True,
                          algs=None, show_quartiles = False, show_normal_CI = False,
-                         alg_colors={}, alg_labels={},
+                         alg_colors=algorithm_colors, alg_labels=algorithm_labels,
                          burnin_timesteps=4*20, burnout_timesteps = 4*5, smoothing_kernel=4):
     """
     ax: matplotlib.pyplot Axis object on which to plot
@@ -1097,16 +1079,15 @@ def plot_quant_over_time(ax,
             ax.fill_between(xs, lowers, uppers, alpha=0.1, color=alg_colors[alg] if alg in alg_colors.keys() else None)
             ax.plot(xs, lowers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=0.5)
             ax.plot(xs, uppers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=0.5)
-        ax.plot(xs, middles, color=alg_colors[alg] if alg in alg_colors.keys() else None, label= alg_labels[alg] if alg in alg_labels.keys() else alg) #TODO: add labels so that we can select to have teh legend on as an optional argument (or just outside the calling of the function)
+        ax.plot(xs, middles, color=alg_colors[alg] if alg in alg_colors.keys() else None, label= alg_labels[alg] if alg in alg_labels.keys() else alg) 
     return ax
 
-    #TODO: make a global dictioanry mapping alg_name to a colour for plotting with a consistet colour scheme across all this script 
 
 def plot_x_per_y(ax, 
                  data_name_x, data_name_y, 
                  normalise_per_100k = False,
                  algs=None, show_quartiles = False, show_normal_CI = False,
-                 alg_colors={}, alg_labels={},
+                 alg_colors=algorithm_colors, alg_labels=algorithm_labels,
                  burnin_timesteps=4*20, burnout_timesteps = 4*5, smoothing_kernel=4):
     """
     Plots the ratio x/y over time (e.g. for plotting number of screens per positive cancer diagnosis). Finds ratio by pairing timeseries on parameterisation and seed.
@@ -1143,7 +1124,6 @@ def plot_x_per_y(ax,
     assert burnin_timesteps>=0
     assert burnout_timesteps>=0
 
-    #TODO: do a warning (not assertion, just print smth out) if the populations referenced by data_name_x and data_name_y do not match
     #Get populations according to numerator and denominator
     x_pop = get_relevant_pop_name(data_name_x)
     y_pop = get_relevant_pop_name(data_name_y)
@@ -1240,18 +1220,19 @@ def plot_x_per_y(ax,
             ax.fill_between(xs, lowers, uppers, alpha=0.1, color=alg_colors[alg] if alg in alg_colors.keys() else None)
             ax.plot(xs, lowers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=0.5)
             ax.plot(xs, uppers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=0.5)
-        ax.plot(xs, middles, color=alg_colors[alg] if alg in alg_colors.keys() else None, label= alg_labels[alg] if alg in alg_labels.keys() else alg) #TODO: add labels so that we can select to have teh legend on as an optional argument (or just outside the calling of the function)
+        ax.plot(xs, middles, color=alg_colors[alg] if alg in alg_colors.keys() else None, label= alg_labels[alg] if alg in alg_labels.keys() else alg) 
     return ax
 
-    #TODO: make a global dictioanry mapping alg_name to a colour for plotting with a consistet colour scheme across all this script 
 
 def plot_paired_difference_tss(ax,
                                data_name, normalise_per_100k,
                                compared_alg, baseline_alg,
                                show_quartiles = False, show_normal_CI = False,
-                               color=None,
+                               color=None, 
                                burnin_timesteps = 4*20, burnout_timesteps=4*5, smoothing_kernel=4,
-                               ax_histogram = None, start_tp=None, end_tp=None):
+
+                               ax_histogram = None, start_tp=None, end_tp=None,
+                               compared_color=None, baseline_color=None,minimise=True):
     '''    
     Plots the difference in quantity over time between a baseline_alg and compared_alg. Finds difference by pairing timeserieses on parameterisation and seed.
 
@@ -1274,6 +1255,11 @@ def plot_paired_difference_tss(ax,
     ax_histogram: The axis to plot the histogram of sum of differences onto, if specified (if None, not doing this)
     start_tp: The starting timepoint if doing a histogram (for the sum)
     end_tp: The ending timepoint if doing a histogram (for the sum)
+    
+    compared_color: The matplotlib color to give the side of the histogram where the compared alg wins (i.e. when the baseline has a higher value iff {minimise}, else lower)
+    baseline_color: The matplotlib color to give the side of the histogram where the baseline alg wins (i.e. when the compared has a higher value iff {minimise}, else lower)
+    minimise: For specifying the colors, determines whether minimising {data_name} is a good thing (e.g. minimising cancers is a good thing)
+        #NOTE: the above pack of three parameters need not be specified when doing a histogram, in which case the full histogram is coloured with {color}
 
     Returns ax if ax_histogram is None, else (ax, ax_histogram)
     '''
@@ -1362,7 +1348,19 @@ def plot_paired_difference_tss(ax,
         if len(unpairedcompared)>0 or len(unpairedbaseline)>0:
             print(f"Failed to pair some of {compared_alg} and {baseline_alg}'s runs. {len(total_diffs)} runs were still paired successfully between the algorithms.")
         
-        ax_histogram.hist(total_diffs, bins=12, density=True, color='deepskyblue') #TODO: could this color be guided by the 'winning' algorithm?
+        if compared_color is None:
+            ax_histogram.hist(total_diffs, bins=12, density=True, color='deepskyblue') 
+        else:
+            #If we have specified colours for our histogram, use them
+            _, hist_bins, hist_patches = ax_histogram.hist(total_diffs, bins=12, density=True, edgecolor='white', lw=0.5)
+            for hist_patch_i in range(len(hist_patches)):
+                #If the bin's left edge is on the left side of the y axis, that means we are talking of COMPARED-BASELINE<0, which means COMPARED<BASELINE, which means 'compared wins' iff {minimise}
+                bin_left = hist_bins[hist_patch_i]
+                bin_right = hist_bins[hist_patch_i+1]
+                if bin_left+bin_right<0: #NOTE: this always colours a bar by the side most of its weight is on -this works as long as there is not a lot of weight exactly at 0 (at which point the colouring will be biased towards the algorithm on the right). For differing algorithms, this assumption should be OK in practice.
+                    hist_patches[hist_patch_i].set_facecolor(compared_color if minimise else baseline_color)
+                else: 
+                    hist_patches[hist_patch_i].set_facecolor(baseline_color if minimise else compared_color)
 
         histogram_height = np.max(np.histogram(total_diffs, bins=12, density=True)[0])
         ax_histogram.vlines(0,0,histogram_height, colors='black', linewidth=1)
@@ -1411,8 +1409,8 @@ def plot_sum_barchart(ax, bar_colors, line_colors,
     for i in range(len(LQs)):
         ax.errorbar([xs[i]], [medians[i]], yerr=([medians[i] - LQs[i]], [UQs[i]- medians[i]]), capsize=3, color='black')
 
-def plot_sum_barchart_all_vacc_levels(ax, alg_colors,
-                                            data_name, start_tp = 0, end_tp=0, 
+def plot_sum_barchart_all_vacc_levels(ax,data_name, alg_colors=algorithm_colors,
+                                             start_tp = 0, end_tp=0, 
                                             normalise_per_100k=False, algs=[]):
     """
     As plot_sum_barchart but does a barchart that covers all vaccination uptake levels (60,80,90) and compares them. Some parameters from plot_sum_barchart removed in this function because they are hardcoded within this function to show the different vaccine levels nicely
@@ -1463,12 +1461,16 @@ def plot_sum_barchart_all_vacc_levels(ax, alg_colors,
 
     return ax
 
-def get_alg_comparison_grid(axs,algs, alg_colors,
-                            data_name, start_tp = 0, end_tp=0, 
+def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
+                            start_tp = 0, end_tp=0, 
                             normalise_per_100k=False,
-                            significance=sig_level):
+                            significance=sig_level,
+                            color_histogram_sides = True,
+                            minimise = True):
     """
     Plots (onto {ax}) a full comparison between all the algorithms in {algs}, in terms of quantity {data_name} added up in timepoint range [start_tp, end_tp]. 
+    
+    {color_histogram_sides} determines whether we colour the mass on the left and right side of each histogram according to the algorithm that beats the other one in the comparison when the weight is on that side - and this is determined by {minimise}; if True then the algorithm which led to the smaller (minimised) value is the winner, else it is the algorithm which led to the larger value. For example, we will want to minimise the number of cancers.
     """
     #Assert parameter correctness (some assertations of parameter correctness are delegated to the start of functions called by this one)
     assert len(axs.shape) == 2 #2-dimensional plot...
@@ -1486,9 +1488,9 @@ def get_alg_comparison_grid(axs,algs, alg_colors,
             ax.set_axis_off()
 
             #Load up relevant algorithms for this square
-            alg1 = algs[i] #TODO: maybe need to switch algs 1 and 2
+            alg1 = algs[i] 
             alg2 = algs[j]
-
+            
             #Sqaure is treated differently depending on its position in the figure
             if i<j:
                 #Sqaures above the diagonal get a histogram of sum-differences between the two algorithms
@@ -1497,7 +1499,20 @@ def get_alg_comparison_grid(axs,algs, alg_colors,
                 if len(unpairedcompared)>0 or len(unpairedbaseline)>0:
                     print(f"Failed to pair some of {alg1} and {alg2}'s runs. {len(total_diffs)} runs were still paired successfully between the algorithms.")
                 
-                ax.hist(total_diffs, bins=12, density=True, color='deepskyblue') #TODO: could this color be guided by the 'winning' algorithm?
+                #Plot the histogram itself
+                if not color_histogram_sides:
+                    ax.hist(total_diffs, bins=12, density=True, color='deepskyblue') 
+                else:
+                    #If we have specified colours for our histogram, use them
+                    _, hist_bins, hist_patches = ax.hist(total_diffs, bins=12, density=True)
+                    for hist_patch_i in range(len(hist_patches)):
+                        #If the bin's left edge is on the left side of the y axis, that means we are talking of COMPARED-BASELINE<0, which means COMPARED<BASELINE, which means 'compared wins' iff {minimise}
+                        bin_left = hist_bins[hist_patch_i]
+                        bin_right = hist_bins[hist_patch_i+1]
+                        if bin_left + bin_right <0:  #NOTE: this always colours a bar by the side most of its weight is on -this works as long as there is not a lot of weight exactly at 0 (at which point the colouring will be biased towards the algorithm on the right). For differing algorithms, this assumption should be OK in practice.
+                            hist_patches[hist_patch_i].set_facecolor(alg_colors[alg2] if minimise else alg_colors[alg1]) #alg2 is the comapred alg, alg1 is the baseline
+                        else:
+                            hist_patches[hist_patch_i].set_facecolor(alg_colors[alg1] if minimise else alg_colors[alg2])
 
                 histogram_height = np.max(np.histogram(total_diffs, bins=12, density=True)[0])
                 ax.vlines(0,0,histogram_height, colors='black', linewidth=1)
@@ -1667,17 +1682,27 @@ def ttest_powerplot(ax, lower_std_bound, upper_std_bound, effect_size_lower=-4, 
 
 
 if __name__=="__main__":
-    fig, ax = plt.subplots(1,1)
+    fig, axs = plt.subplots(4,4)
 
+    """plot_alg_comparison_grid(axs, ['5_5_8_8_68_76_55_55_9_9__96_7_13',
+                                   '5_none_8_8_68_76_55_55_9_9__96_7_13',
+                                   '5plusnone_8_8_68_76_55_55_9_9__96_7_13',
+                                   'none_none_8_8_68_76_55_55_9_9__96_7_13'],
+                                  'inc_infectious_fullpop_alltypes',
+                                   end_tp=200,
+                                   normalise_per_100k=True)"""
 
     """plot_paired_difference_tss(ax[0], 'inc_infectious_fullpop_alltypes', True,
                           '10_15_8_8_68_76_55_55_9_9__96_7_13',
-                            '15_15_8_8_68_76_55_55_9_9__96_7_13',
+                            '15_20_8_8_68_76_55_55_9_9__96_7_13',
                                     True,
                                     False,
                                             ax_histogram=ax[1],
                                                     start_tp=0,
-                                                    end_tp=200        )"""
+                                                    end_tp=200   ,
+                                                         compared_color='black',
+                                                              baseline_color='red',
+                                                                   minimise=False     )"""
 
 
     """plot_x_per_y(ax,'inc_cancers_vaccpop_alltypes','routine_screens_vaccpop',
@@ -1687,7 +1712,7 @@ if __name__=="__main__":
                    False
                    )"""
 
-    plot_quant_over_time(ax,
+    """plot_quant_over_time(ax,
                          'routine_screens_ineligiblepop', #eligibleun
                          True, #normalise_per_100k
                          ['5_5_8_8_68_76_55_55_9_9__96_7_13', 
@@ -1700,7 +1725,7 @@ if __name__=="__main__":
                                         '5_none_8_8_68_76_55_55_9_9__96_7_13':'5_none',
                                         '5plusnone_8_8_68_76_55_55_9_9__96_7_13':'5plusnone',
                                         'none_none_8_8_68_76_55_55_9_9__96_7_13':'none_none'}
-                         )
+                         )"""
     plt.legend()
     plt.show()
 
@@ -1860,6 +1885,8 @@ Finally, the following quantities are not related to genotypes, so only recorded
                 'none_none_LV':natureColorScheme['reds'][-1], #'none' indicates there is no (asymptomatic) screening at all (hence a lack of an interval itself)
                 '5_none_LV':natureColorScheme['reds'][-5],
                 '5plusnone_LV':natureColorScheme['reds'][-3]}
+
+                
     """
 
     """
