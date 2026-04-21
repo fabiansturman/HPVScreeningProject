@@ -21,11 +21,11 @@ from tqdm import tqdm
 
 import pickle
 
-from InterventionAlgorithms import NHS_2025_lambdamu, NHS_Vacc
+from InterventionAlgorithms import screeningAlgorithms, NHS_Vacc
 from basePars import base_pars
 import hpvsim as hpv
 
-from project_modelling.scenario_configuration import cal_filename  #import the name of this calibration according to the parameterisation of the model we are calibrating to
+from scenario_configuration import cal_filename  #import the name of this calibration according to the parameterisation of the model we are calibrating to
 
 
 #Whether to plot for start years (2012-2018 + 2011 cancerous genotype data) or end years (2019-2022)
@@ -33,7 +33,7 @@ plot_start = True
 
 
 #Name for the dummy calibration
-cal_name = "calibration_results/dummy_15Feb26_102"
+cal_name = "project_modelling/calibration_results/dummy_21Apr26_1"
 
 #Simulation start and end dates
 start = 1980
@@ -46,13 +46,13 @@ cancerous_genotype_dist_year=2011
 cancerous_genotype_dist_TRUEDATA = [0.677,0.188,0.163,0.059] #hpv16, hpv18, hi5, ohr
 
 #Number of repeat runs for each parameter set
-repeat_runs = 10
+repeat_runs = 4
 
 #Load in final calibration
 with open(cal_filename, 'rb') as file:
     loadeddata = pickle.load(file)
 
-final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
+final_cal_data = loadeddata['final_cal_data'][:2] #this is a list of parameter-tuples, so has a fixed ordering
 par_labels = loadeddata['par_labels']
 
 
@@ -60,7 +60,7 @@ par_labels = loadeddata['par_labels']
 if __name__=="__main__":   
     #Configure sim template for use in the rest of this script
     pars = base_pars
-    pars['interventions'] =  NHS_2025_lambdamu.get_interventions(l=1, m=1)  + NHS_Vacc.vaccinations
+    pars['interventions'] =  screeningAlgorithms.get_interventions(v=5,u=5,a=5)  + NHS_Vacc.vaccinations
     sim = hpv.Sim(pars) 
     
     #Set up the dummy calibration - to end up having an object with which we can easily change the parameters of a HPVsim instance
@@ -95,7 +95,8 @@ if __name__=="__main__":
 
     #Define accumulating variables - each simulation run adds an element to each of these lists
     all_cancer_results = [] #stores analyser results for cancers by age by year
-    gofs_cancers_normalised = [] #stores corresponding GOFs
+    gofs_cancers_normalised = [] #storing goodness of fits against number of cancers by year and age bin
+    total_gofs_normalised = [] #storing overall goodness of fits (i.e. if {plot_start}, adds up GOF against both cancers and cancerous genotype distribution, else this is the same array as {gof_cancers_normalised})
 
     if plot_start:
         #genotype distribution
@@ -103,7 +104,7 @@ if __name__=="__main__":
         all_cancerous_genotype_results_18 = [] 
         all_cancerous_genotype_results_hi5 = [] 
         all_cancerous_genotype_results_ohr = [] 
-        gofs_cancerous_genotypes_normalised = []
+        gofs_cancerous_genotypes_normalised = [] #storing goodness of fits against cancerous genotype distribution
 
 
     #Iterate over each parameterisation in our final calibration
@@ -144,7 +145,8 @@ if __name__=="__main__":
             all_cancer_results.append(an.results)
 
             an.result_args['cancers'].weights=np.ones(an.result_args['cancers'].data['value'].shape)
-            gofs_cancers_normalised.append(an.compute_mismatch('cancers')/(len(years)*17))
+            this_gof_cancers_normalised = an.compute_mismatch('cancers')/(len(years)*17)
+            gofs_cancers_normalised.append(this_gof_cancers_normalised)
 
             if plot_start:
                 a,b,c,d = msim_sim.results['cancerous_genotype_dist'][:,(cancerous_genotype_dist_year-start)]
@@ -154,7 +156,12 @@ if __name__=="__main__":
                 all_cancerous_genotype_results_ohr.append(d)
 
                 gof = hpv.misc.compute_gof(cancerous_genotype_dist_TRUEDATA, [a,b,c,d])
-                gofs_cancerous_genotypes_normalised.append(gof.sum()/4)
+                this_gof_cancerous_genotypes_normalised = gof.sum()/4
+                gofs_cancerous_genotypes_normalised.append(this_gof_cancerous_genotypes_normalised)
+
+                total_gofs_normalised.append(this_gof_cancers_normalised+this_gof_cancerous_genotypes_normalised)
+            else:
+                total_gofs_normalised.append(this_gof_cancers_normalised)
         
     all_cancer_results = np.array(all_cancer_results) #Converts cancer analyser results to array shape (n_runs, n_timepoints) (n_runs=len(param_list)*repeat_runs)
     
@@ -236,6 +243,9 @@ if __name__=="__main__":
     axGOF_normalised.set_title("GOF (relative to data sizes)")
     axGOF_normalised.set_ylim(0,0.25)
 
+    print("Info on total GOF:")
+    print(f"\t min:{min(total_gofs_normalised)} \n\tLQ:{np.percentile(total_gofs_normalised, 25)} \n\tmedian:{np.median(total_gofs_normalised)} \n\tUQ:{np.percentile(total_gofs_normalised, 75)} \n\t max:{max(total_gofs_normalised)}")
+    print(f"(recall, this is for final pooled calibration {cal_filename})")
 
 
 
