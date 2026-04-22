@@ -111,7 +111,7 @@ if __name__=="__main__":
                     max:
     
     -> Apr19_1__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr20_1__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on BMRC) as above
+    -> Apr20_1__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on BMRC, copied to MB) as above
     -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) as above
         => ** summarised into FinalPooledCalibration_8_8_8_68_68_95_95__96_7_13.pickle **
                 ^ GOF details of best cals:
@@ -126,25 +126,20 @@ if __name__=="__main__":
     ->
 
     -> Apr21_1__8_68_76_55_55_9_9__96_7_62 : INPROGRESS this is a cal (on XPS) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr21_2__8_68_76_55_55_9_9__96_7_62 : INPROGRESS this is a cal (on BMRC) as above
+    -> Apr21_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on BMRC, copied to MB) as above
     -> Apr22_2__8_68_76_55_55_9_9__96_7_62 : INPROGRESS this is a cal (on MB) as above
 
     
 
 
-    TODO: -> complete evaluations of all my sensitivity analysis calibrations that have so far been pooled
-        -> complete all remaining senstiivty analysis calibrations 
-        -> evaluate the remaining sensitivty analysis calibrations and see if i need to redo the lot with a different base case (potentially the different initial HPV prevaklence looks like it may be pretty good, in which case i need to consider the whole lot against that instead!)    
+    TODO: -> complete all remaining senstiivty analysis calibrations 
+        NOTE: on reconsideration, I am NOT going to compare calibration evaluations between different sensitivity analyses unless there is a clear difference (we are talking, UQ of one set of SA GOFs is below LQ of the main cases's GOFs). Otherwise, it is a totally different problem to be thinking about what sensitivty analysis most makes sense, especially as my main case is informed by the literature with SAs currently probing other potential parameterisations of which wew are less certain of the correctness. And besides, it is very very likely that my conclusions end up being the same across all the SAs. So unless the conclusions start being quite different between the SAs or one of the SAs ends up with an evaluation GOF distribution that is MUCHH better than the main case's evaluation GOF distribution (implying i may be way off with my main case, or at least way off how good I could have been in my fit), then keep the cases as they are right now
 
-    NOTE: Method for sensitibity analysis is to do a local search through the 'sensitivity analysis' space, until I find a local GOF minimum from the calibrations, then we stay there.
-            i.e. we can't do full calibrations and full results for the grid of all sensitivty analysis combos, so instead start with one 'hyperparmeterisation' (with a hyperparameter defined as a point in our sensitivity analysis space). We then do a 1-v-all sensitivity analysis comparing all hyparameterisations a 'manhatten distance' (sorta) of 1 away from this one to it. If one hyperametersation looks geniunely better than the other one (comparing box plots of evaluation GOFs, see from looking at some min/LQ/median/UQ/max distribution characterisastions to see waht quantitive metric of these seems appropriate but make it something more rigorous than just looking at them hopefully. even if its a certain percentage differnece in medians , tho ideally something which accounts ofr variabilityt oo. probs UQ_a<LQ_b is too strict a condition?) we move to that hyperparmeterisation and repeat until we settle somewhere.
-                    ... Then, once we have settled somewhere, we use our 1-v-all calibrations against this last case to generate a full suite of sensitivity analysis results.
-                ^ further note that this evaluation analysis is just comparing the data <=2018
-
+        TODO: Compare my GOF in the end to my previous cal (i.e. getting sub 0.2 gofs in 75% at least of cases, ideally 100%). i should be there!!
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr22_2_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr22_3_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
