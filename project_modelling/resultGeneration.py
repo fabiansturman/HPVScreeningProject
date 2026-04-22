@@ -93,7 +93,7 @@ sig_level = 0.01
 
 #screening_algorithm_stems defines the internal naming for all considered algorithms - not accounting for augmenting with sensitivity analyses (i.e. by considering different vaccination levels and different other parameterisations)
 
-]
+
 
 screening_algorithm_stems = ['V5U5A5', 'V7U5A5',    'V10U5A5',      'V15U5A5',  'V_U5A5',
                                                     'V10U7A5',      'V15U7A5',  'V_U7A5', #this is an intermediate stage of algs to consider, with a slightly increased interval for U but nothing crazy
@@ -2032,9 +2032,3 @@ Finally, the following quantities are not related to genotypes, so only recorded
 
     #TODO: i think plotting the vacc levels and infection incidence over time between teh three cases to show that in the short term yes the different levels of vaccination don't yield that different results by 2050, and yet even then we see some differences creeping into the sensitivtiy analysis - and then presumably if we run the simulations for longer we will get even bigger differences
 
-
-    #TODO: I think that maybe the equity things should be plots like I have given jasmina, just giving a taste of different algorithm trends in the figure (similar to what I did with arun not showing all the signals, just show a sample of signals which represents the trends of teh whole population)
-    #^ and then the probabilities of elimination should be tabulated with algorithms as rows, and columns grouped by vaccination uptake and then, for each vacc uptake value, containing LQ incidence over all of 2040, Median indicence over all of 2040, UQ incidence over all of 2040, and bolded probability.
-    # then the equity tables are able to be made with my existing plotting functionality and the probabilities with a small change to my sum functionality. 
-
-#I think I shopuld also look at equitability in terms of elimination probability by 2040 - splitting this by vacc and unvacc. WE see that the 5plusX algs are worse than the 5_x algs also in terms of prob of elimination if we look just at unvacc (with a bigger difference than if we looked at prob of elimination across the full pop). But I think rahter than repeating the same table lots of times, I should just embed the numbers in the text, accompanying a figure of the unvacc and vacc versions of the UDa5Y curves as a lil figure that references the big timeseries figure
