@@ -121,15 +121,24 @@ if __name__=="__main__":
                     UQ:
                     max:
 
-    -> Apr22_3__8_68_76_55_55_9_9_1_96_7_13 : INPROGRESS this is a cal (on BMRC) doing a Sensitivity Analysis considering ohr rel imm of 0.1. (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> Apr22_3__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on BMRC, on MB) doing a Sensitivity Analysis considering ohr rel imm of 0.1. (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr23_1__8_68_76_55_55_9_9_1_96_7_13 : INPROGRESS this is a cal (on XPS) as above     
-    ->
+    -> Apr23_3__8_68_76_55_55_9_9_1_96_7_13 : INPROGRESS this is a cal (on MB) as above
 
-    -> Apr21_1__8_68_76_55_55_9_9__96_7_62 : INPROGRESS this is a cal (on XPS) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> Apr21_1__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr21_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on BMRC, copied to MB) as above
-    -> Apr22_2__8_68_76_55_55_9_9__96_7_62 : INPROGRESS this is a cal (on MB) as above
-
+    -> Apr22_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on MB) as above
+        => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9__96_7_62.pickle **
+                ^ GOF details of best cals:
+                    min:
+                    LQ:
+                    median:
+                    UQ:
+                    max:
     
+    -> Apr23_4
+    ->
+    ->
 
 
     TODO: -> complete all remaining senstiivty analysis calibrations 
@@ -139,7 +148,7 @@ if __name__=="__main__":
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr23_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr23_4_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
