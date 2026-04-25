@@ -64,62 +64,32 @@ if __name__=="__main__":
     """
     Current cals that are running that I am yet to process into final cals (with their sibling cals)
 
-    -> Apr12_2__8_68_76_55_55_9_9__96_7_13 : COMPELTE this is a cal (on MB) using Sophie's mixing matrices and base sensitivity analysis case otherwise
-    -> Apr12_4__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (done on BMRC, transferred to MB) using Sophie's mixing matrices and base sensitivity analysis case otherwise
-    -> Apr13_1__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (done on BMRC, transferred to MB) using Sophie's mixing matrices and base sensitivity analysis case otherwise
-        => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9__96_7_13_OLDMIXING.pickle **
-                ^ GOF details of best cals:
-                    min:
-                    LQ:
-                    median:
-                    UQ:
-                    max:
+    -> using Sophie's mixing matrices and base sensitivity analysis case otherwise
+    -> 
+    -> 
+        => **  **
         -show this result still in the appendix
 
-    -> Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on MB), using my own mixing matrices (Married dervied from natsal cohabitation data, and Casual according to sexual encounter mixing matrix and base sensitivuty analysis case otehrwise (the sexual encounter mixing matrix hopefully is a good proxy for causal - looks good intuitively as it is a diagnonal with a bit larger entropy than marriage -but  really also includes marriage but hopefully other cal fits for the doubling? maybe not hmm but we will see. I guess we could calibrate condom usage in marriage to serve as a proxy to allow us to alter the effect of the married layer to cover for doubling up?))
-    -> Apr15_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (done on BMRC, transferred to MB), identical setup to the calibration directly above
-    -> Apr15_2_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on MB) identical setup to above
-        => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9__96_7_13.pickle **
-                ^ GOF details of best cals:
-                    min:
-                    LQ:
-                    median:
-                    UQ:
-                    max:
+    -> using my own mixing matrices (Married dervied from natsal cohabitation data, and Casual according to sexual encounter mixing matrix and base sensitivuty analysis case otehrwise (the sexual encounter mixing matrix hopefully is a good proxy for causal - looks good intuitively as it is a diagnonal with a bit larger entropy than marriage -but  really also includes marriage but hopefully other cal fits for the doubling? maybe not hmm but we will see. I guess we could calibrate condom usage in marriage to serve as a proxy to allow us to alter the effect of the married layer to cover for doubling up?))
+    ->
+    -> 
+        => **  **
         - this is the preferred choice of mixing matrix and what all the other sensitivtiy analyses will use (as well as the base case, which is this here)
 
-    -> Apr16_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on BMRC, transferred to MB) doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr17_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on MB) the same as above
-    -> Apr17_2__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on BMRC, transferred to MB) the same as above
-        => ** summarised into FinalPooledCalibration_65_68_76_55_55_9_9__96_7_13.pickle **
-                ^ GOF details of best cals:
-                    min:
-                    LQ:
-                    median:
-                    UQ:
-                    max:
+    ->  doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> 
+    -> 
+        => **  **
 
-    -> Apr18_1__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr18_2__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on XPS, transferred to MB) as above
-    -> Apr18_4__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on BMRC, transferred to MB) as above
-        => ** summarised into FinalPooledCalibration_8_68_76_36_36_8_8__96_7_13.pickle **
-                ^ GOF details of best cals:
-                    min:
-                    LQ:
-                    median:
-                    UQ:
-                    max:
+    ->  doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    ->
+    -> 
+        => **  **
     
-    -> Apr19_1__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr20_1__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on BMRC, copied to MB) as above
-    -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) as above
-        => ** summarised into FinalPooledCalibration_8_8_8_68_68_95_95__96_7_13.pickle **
-                ^ GOF details of best cals:
-                    min:
-                    LQ:
-                    median:
-                    UQ:
-                    max:
+    -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> 
+    -> 
+        => ** **
 
     -> Apr22_3__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis considering ohr rel imm of 0.1. (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr23_1__8_68_76_55_55_9_9_1_96_7_13 : INPROGRESS this is a cal (on XPS) as above     
@@ -129,16 +99,11 @@ if __name__=="__main__":
     -> Apr21_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on BMRC, copied to MB) as above
     -> Apr22_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on MB) as above
         => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9__96_7_62.pickle **
-                ^ GOF details of best cals:
-                    min:
-                    LQ:
-                    median:
-                    UQ:
-                    max:
     
     -> Apr23_4__8_68_76_55_55_9_9__9_85_13 : COMPELTE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis on Cytology Parameterisation (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
     -> Apr24_1__8_68_76_55_55_9_9__9_85_13 : COMPLETE this is a cal (on MB) as above
     -> Apr25_1__8_68_76_55_55_9_9__9_85_13 : INPROGRESS this is a cal (on BMRC) as above
+       
 
 
     TODO: -> complete all remaining senstiivty analysis calibrations 

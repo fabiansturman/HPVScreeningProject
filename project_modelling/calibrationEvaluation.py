@@ -27,13 +27,14 @@ import hpvsim as hpv
 
 from scenario_configuration import cal_filename  #import the name of this calibration according to the parameterisation of the model we are calibrating to
 
+print(cal_filename)
 
 #Whether to plot for start years (2012-2018 + 2011 cancerous genotype data) or end years (2019-2022)
 plot_start = True 
 
 
 #Name for the dummy calibration
-cal_name = "project_modelling/calibration_results/dummy_21Apr26_3"
+cal_name = "project_modelling/calibration_results/dummy_25Apr26_7"
 
 #Simulation start and end dates
 start = 1980
@@ -46,13 +47,14 @@ cancerous_genotype_dist_year=2011
 cancerous_genotype_dist_TRUEDATA = [0.677,0.188,0.163,0.059] #hpv16, hpv18, hi5, ohr
 
 #Number of repeat runs for each parameter set
-repeat_runs = 5
+repeat_runs = 1#10
 
 #Load in final calibration
 with open(cal_filename, 'rb') as file:
     loadeddata = pickle.load(file)
 
 final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
+print(f"len(final_cal_data) = {len(final_cal_data)}")
 par_labels = loadeddata['par_labels']
 
 
@@ -145,7 +147,9 @@ if __name__=="__main__":
             all_cancer_results.append(an.results)
 
             an.result_args['cancers'].weights=np.ones(an.result_args['cancers'].data['value'].shape)
+            tmp_total_mismatch = 0
             this_gof_cancers_normalised = an.compute_mismatch('cancers')/(len(years)*17)
+            tmp_total_mismatch += this_gof_cancers_normalised*len(years)*17 #doing it like this as I then do not need to worry about an.compute_mismatch() changing its internal state
             gofs_cancers_normalised.append(this_gof_cancers_normalised)
 
             if plot_start:
@@ -157,6 +161,8 @@ if __name__=="__main__":
 
                 gof = hpv.misc.compute_gof(cancerous_genotype_dist_TRUEDATA, [a,b,c,d])
                 this_gof_cancerous_genotypes_normalised = gof.sum()/4
+                tmp_total_mismatch += this_gof_cancerous_genotypes_normalised*4
+                print(f'This tmp_total_mismatch = {tmp_total_mismatch}')
                 gofs_cancerous_genotypes_normalised.append(this_gof_cancerous_genotypes_normalised)
 
                 total_gofs_normalised.append(this_gof_cancers_normalised+this_gof_cancerous_genotypes_normalised)
