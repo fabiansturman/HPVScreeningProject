@@ -144,8 +144,6 @@ if __name__=="__main__":
 
     calib.df.to_csv(f"{name}.csv")
 
-    #TODO: Once I have settled on a final initial setup for calibration: any changes I make to how I calibrate must be shown where relevant in the excel paramter spreadsheet!!
 
     #TODO: delete all practice/test calibrations from my local copy of the git repo and then change the .gitignore so that my calibration files get uploaded 
 
-    #TODO: cal evaluation shpuld include plots just along an axis for each param with dots on the axis for the sampled parameter positions, with the size + height of teh dot according to its GOF so the goopd ones are most visible in a sea of samples, and we colouyr dots by the calibration we got them from, so we can see how cals differ in the parameters they pick, in the marginals (some persoective, if only in the marginals, is better than none)

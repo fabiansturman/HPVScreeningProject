@@ -122,4 +122,3 @@ plt.ylabel('Rate of vaccination uptake (%) in cohort, between Years 8-10')
 
 plt.show()
 
-#TODO: add on the values for the latest years to this plot!! Kate sent them a while ago!
