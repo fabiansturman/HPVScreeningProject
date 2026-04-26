@@ -179,7 +179,7 @@ for screening_algorithm_stem in screening_algorithm_stems:
     for vacc_case in vacc_cases:
         for cal_case_key in cal_cases.keys():
             cal_case_suffix = cal_cases[cal_case_key]
-            alg_name = f"{screening_algorithm_stem}{vacc_case}{cal_case_suffix}"screening_algorithm_stems
+            alg_name = f"{screening_algorithm_stem}{vacc_case}{cal_case_suffix}"
             algorithms.append(alg_name)
             algorithm_labels[alg_name] = labels_by_algorithm_stem[screening_algorithm_stem]
             algorithm_colors[alg_name] = colors_by_algorithm_stem[screening_algorithm_stem]
