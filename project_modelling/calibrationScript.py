@@ -65,43 +65,43 @@ if __name__=="__main__":
     Current cals that are running that I am yet to process into final cals (with their sibling cals)
 
     -> using Sophie's mixing matrices and base sensitivity analysis case otherwise
-    -> 
+    -> #TODO: this is the final pack of cals to start, for results by end of sunday
     -> 
         => **  **
         -show this result still in the appendix
 
-    -> using my own mixing matrices (Married dervied from natsal cohabitation data, and Casual according to sexual encounter mixing matrix and base sensitivuty analysis case otehrwise (the sexual encounter mixing matrix hopefully is a good proxy for causal - looks good intuitively as it is a diagnonal with a bit larger entropy than marriage -but  really also includes marriage but hopefully other cal fits for the doubling? maybe not hmm but we will see. I guess we could calibrate condom usage in marriage to serve as a proxy to allow us to alter the effect of the married layer to cover for doubling up?))
+    -> Apr26_1__8_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on MB) which will provide a 'base case' against which to do Sensitivity Analyses, using my own mixing matrices (Married dervied from natsal cohabitation data, and Casual according to sexual encounter mixing matrix)
     ->
     -> 
-        => **  **
+        => **  ** #TODO: this is the current thing to focus on, REUSLTS BY NOON TUESDAY PLZ
         - this is the preferred choice of mixing matrix and what all the other sensitivtiy analyses will use (as well as the base case, which is this here)
 
-    ->  doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    ->  doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
+    ->  
     -> 
-    -> 
-        => **  **
-
-    ->  doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    ->
+        => **  ** #TOD0: this is the third pack of cals to start, for results completed by noon saturday
+ 
+    ->  doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
+    -> #TODO: this is the second pack of cals to start, so these results are completed by end of thursday
     -> 
         => **  **
     
-    -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
-    -> Apr25_2__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on MB) as above
+    -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
+    -> Apr25_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) as above
     -> Apr25_3__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on XPS) as above
         => ** **
 
-    -> Apr22_3__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis considering ohr rel imm of 0.1. (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> Apr22_3__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis considering ohr rel imm of 0.1. (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr23_1__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above     
     -> Apr23_3__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on MB) as above
         => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9_1_96_7_13.pickle **
 
-    -> Apr21_1__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> Apr21_1__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr21_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on BMRC, copied to MB) as above
     -> Apr22_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on MB) as above
         => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9__96_7_62.pickle **
     
-    -> Apr23_4__8_68_76_55_55_9_9__9_85_13 : COMPELTE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis on Cytology Parameterisation (otherwise is identical to the setup in Apr14_1_USINGNATSALANDLIT__8_68_76_55_55_9_9__96_7_13)
+    -> Apr23_4__8_68_76_55_55_9_9__9_85_13 : COMPELTE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis on Cytology Parameterisation (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr24_1__8_68_76_55_55_9_9__9_85_13 : COMPLETE this is a cal (on MB) as above
     -> Apr25_1__8_68_76_55_55_9_9__9_85_13 : INPROGRESS this is a cal (on BMRC) as above
        
@@ -114,7 +114,7 @@ if __name__=="__main__":
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr25_3_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr26_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
