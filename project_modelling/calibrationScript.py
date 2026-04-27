@@ -70,9 +70,9 @@ if __name__=="__main__":
         => **  **
         -show this result still in the appendix
 
-    -> Apr26_1__8_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on MB) which will provide a 'base case' against which to do Sensitivity Analyses, using my own mixing matrices (Married dervied from natsal cohabitation data, and Casual according to sexual encounter mixing matrix)
+    -> Apr26_1__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on MB) which will provide a 'base case' against which to do Sensitivity Analyses, using my own mixing matrices (Married dervied from natsal cohabitation data, and Casual according to sexual encounter mixing matrix)
     -> Apr26_2__8_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on BMRC) as above
-    -> 
+    -> Apr27_1__8_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on MB) as above
         => **  ** #TODO: this is the current thing to focus on, REUSLTS BY NOON TUESDAY PLZ
         - this is the preferred choice of mixing matrix and what all the other sensitivtiy analyses will use (as well as the base case, which is this here)
 
@@ -114,7 +114,7 @@ if __name__=="__main__":
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr26_2_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr27_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
