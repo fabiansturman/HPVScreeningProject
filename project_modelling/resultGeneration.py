@@ -48,10 +48,8 @@ The functions available in (5) are listed below:
 -> plot_paired_difference_tss: plot the timeseries of differences corresponding to a particular row/column in a get_alg_comparison_grid plot 
 -> plot_sum_barchart: plots a barchart of total of a quantity, with quartiles shown in superimposed error bars, between two timepoints for the desired selection of algorithms
 -> plot_sum_barchart_all_vacc_levels: as above, but plots the barchart for the provided algorithms alongisde that algorithm with "_LV" and "_HV" appended
-    #TODO: ^ update this to plot over vacc levels by changing the name in the way I am encoding it now (i.e.: replacing the relevant '8' with a '6' or '9')
 -> plot_alg_comparison_grid: plots a grid doing a pairwise comparison between all specified algorithms, in terms of a specified quantity and between two specified timepoints
 -> get_elimination_table: Generates a CSV file of an 'elimination table' for a specified set of algs, data quantity, and timepoints between which to sum, where we report the empirical probability of the sum being under a specified threshold.
-    #TODO: ^ as with plot_sum_barchart_all_vacc_levels, update this to work with the new way I am encoding vaccination levels!
 
 The functions available in (6) are listed below:
 -> ttest_powerplot: plots power curves for a t test, to understand the power of the t-tests represented in the results of (5)
@@ -1411,12 +1409,16 @@ def plot_sum_barchart(ax, bar_colors, line_colors,
 
 def plot_sum_barchart_all_vacc_levels(ax,data_name, alg_colors=algorithm_colors,
                                              start_tp = 0, end_tp=0, 
-                                            normalise_per_100k=False, algs=[]):
+                                            normalise_per_100k=False, 
+                                            alg_stems = ['V5U5A5'], cal_case_suffix = '_8_68_76_55_55_9_9__96_7_13'):
     """
     As plot_sum_barchart but does a barchart that covers all vaccination uptake levels (60,80,90) and compares them. Some parameters from plot_sum_barchart removed in this function because they are hardcoded within this function to show the different vaccine levels nicely
     """
     bar_colors = {}
-    for alg in alg_colors.keys():
+    algs = []
+    for alg_stem in alg_stems:
+        alg = f"{alg_stem}_8{cal_case_suffix}"
+        algs.append(alg)
         color = deepcopy(alg_colors[alg])
         color += "40" #"40" is 25% in hex, which refers to 0.25 alpha
         bar_colors[alg] = color
@@ -1428,35 +1430,33 @@ def plot_sum_barchart_all_vacc_levels(ax,data_name, alg_colors=algorithm_colors,
                       width=0.2, hatch="xxxx")
     
     #Now change over to LV
-    algstoplot_LV = []
+    algs_LV = []
     alg_colors_LV = {}
     bar_colors_LV = {}
-
-    for alg in algs:
-        alg_LV = f"{alg}_LV"
-        algstoplot_LV.append(alg_LV)
-        alg_colors_LV[alg_LV] = alg_colors[alg]
-        bar_colors_LV[alg_LV] = bar_colors[alg]
+    for alg_stem in alg_stems:
+        alg = f"{alg_stem}_6{cal_case_suffix}"
+        algs_LV.append(alg)
+        alg_colors_LV[alg] = alg_colors[alg]
+        bar_colors_LV[alg] = alg_colors[alg]
 
     plot_sum_barchart(ax, bar_colors_LV, alg_colors_LV, 
-                      data_name, start_tp, end_tp, normalise_per_100k, algstoplot_LV, 
-                      xs = np.arange(len(algstoplot)),
+                      data_name, start_tp, end_tp, normalise_per_100k, algs_LV, 
+                      xs = np.arange(len(algs_LV)),
                       width=0.2, hatch="////")
     
     #Now change over to HV
-    algstoplot_HV = []
+    algs_HV = []
     alg_colors_HV = {}
     bar_colors_HV = {}
-
-    for alg in algs:
-        alg_HV = f"{alg}_HV"
-        algstoplot_HV.append(alg_HV)
-        alg_colors_HV[alg_HV] = alg_colors[alg]
-        bar_colors_HV[alg_HV] = bar_colors[alg]
+    for alg_stem in alg_stems:
+        alg = f"{alg_stem}_9{cal_case_suffix}"
+        algs_HV.append(alg)
+        alg_colors_HV[alg] = alg_colors[alg]
+        bar_colors_HV[alg] = alg_colors[alg]
 
     plot_sum_barchart(ax, bar_colors_HV, alg_colors_HV, 
-                      data_name, start_tp, end_tp, normalise_per_100k, algstoplot_HV, 
-                      xs = [x + 0.6 for x in np.arange(len(algstoplot))],
+                      data_name, start_tp, end_tp, normalise_per_100k, algs_HV, 
+                      xs = [x + 0.6 for x in np.arange(len(algs_HV))],
                       width=0.2, hatch="\\\\\\\\")
 
     return ax
@@ -1592,21 +1592,20 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
 
     return axs
 
-def get_elimination_table(algs, csv_filename, 
+def get_elimination_table(alg_stems, cal_case_suffix, csv_filename, 
                           data_name='inc_cancers_allpop_alltypes', start_tp=240, end_tp=243,
-                          normalise_per_100k=True, target_sum=4,
-                        vacc_levels = ['_LV', '', '_HV']):
+                          normalise_per_100k=True, target_sum=4):
     """
     Saves a csv that forms a table of values relevant to cervical cancer elimination under different algorithms and vaccination levels.
 
-    algs: set of screening algorithms to collect results over
+    alg_stems: set of screening algorithm stems (format 'V{}U{}A{}') to collect results over
+    cal_case_suffix: to be added to the end of the stems (after the alg stem and the vacc level)
     csv_fileaname: name of the file to which to save the generated results
     data_name: the quantity to compute sums of for each algorithm (changeable to focus, for example, on just unvaccinated subpopulation)
     start_tp: inclusive lower bound for the sum (defaults to start of 2040 for a simulation starting at 1980 for a sim with dt=0.25)
     end_tp: inclusive upper bound for the sum (defaults to end of 2040 (i.e. 2040.75) for a simulation starting at 1980 for a sim with dt=0.25)
     normalise_per_100k: whether all values should be normalised per 100k before adding up
     target_sum: the value which we want the sums to be strictly less than. If all sums for a particular alg at a particular vacc level are strictly below {target_sum}, then we write down an empirical probability of 1 of reaching the target sum level
-    vacc_levels: vaccination levels over which we are repeating the results (defaults to all simulated vacc levels)
 
     Saves a csv file with one row for each algorithm, and one column-bunch for each vacc_level. ]
     Each column bunch contains columns for (LQ, Median, UQ) data_name sum between timepoints, and then the proportion of alg runs for that vacc level that got a sum under the target_sum
@@ -1615,7 +1614,7 @@ def get_elimination_table(algs, csv_filename,
 
     #Add column headings
     row = ['alg']
-    for vacc_level in vacc_levels:
+    for vacc_level in ['_6','_8','_9']:
         row.append(f"LQ ({vacc_level})")
         row.append(f"Median ({vacc_level})")
         row.append(f"UQ ({vacc_level})")
@@ -1623,11 +1622,12 @@ def get_elimination_table(algs, csv_filename,
     tabular_data.append(row)
     
     #Populate rest of rows of table
-    for alg in tqdm(algs):
-        row=[alg] #starting off row with the row heading
-        for vacc_level in vacc_levels:
-            totals = get_simple_totals(data_name, start_tp, end_tp, normalise_per_100k, algs=[f"{alg}{vacc_level}"])[f"{alg}{vacc_level}"]
-            totals=np.array(totals) #needed for the following processing
+    for alg_stem in tqdm(alg_stems):
+        row=[alg_stem] #starting off row with the row heading
+        for vacc_level in ['_6','_8','_9']:
+            alg = f'{alg_stem}{vacc_level}{cal_case_suffix}'
+            totals = get_simple_totals(data_name, start_tp, end_tp, normalise_per_100k, algs=[alg])
+            totals=np.array(totals[alg]) #extract this alg's data (the only data that was there), and convert to numpy array as this is needed for the following processing
             row.append("{:.2f}".format( np.percentile(totals, 25) ))
             row.append("{:.2f}".format( np.percentile(totals, 50) ))
             row.append("{:.2f}".format( np.percentile(totals, 75) ))
@@ -2028,7 +2028,4 @@ Finally, the following quantities are not related to genotypes, so only recorded
     ttest_powerplot(ax, 350/scale_factor_to_get_per_100k, 1500/scale_factor_to_get_per_100k, effect_size_lower=-4, effect_size_upper=4, alpha=0.01, nobs=44*5)
     plt.show()
     """
-
-
-    #TODO: i think plotting the vacc levels and infection incidence over time between teh three cases to show that in the short term yes the different levels of vaccination don't yield that different results by 2050, and yet even then we see some differences creeping into the sensitivtiy analysis - and then presumably if we run the simulations for longer we will get even bigger differences
 

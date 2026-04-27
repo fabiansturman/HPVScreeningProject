@@ -57,7 +57,6 @@ def log_current_state(sim, log, trackable_interventions_by_label = None):
             -> scale (np.array[float]): list of floats where scale[pid] is the relative scale of agent pid (i.e. if scale=[1,10], then agent 1 represents 10x as many simulated people as agent 0.)
 
             -> susceptible (np.array[boolean], shape(num_genotypes,n) ): boolean array where susceptible[g,pid] stores, for agent pid, whether the agent is susceptible to (i.e. not infected by) genotype g
-                #TODO: Am i right with the shape being (num_genotypes, n) rather than (n, num_genotypes)?? I think so, given we do AND over axis 0 to determine they are fully not infected....
             -> infectious (np.array[boolean], shape(num_genotypes,n) ): boolean array where infectious[g,pid] stores, for agent pid, whether the agent is infectious with (i.e. has active infection) genotype g
             -> inactive (np.array[boolean], shape(num_genotypes,n) ): boolean array where inactive[g,pid] stores, for agent pid, whether the agent has an inactive infection with genotype g
            
@@ -88,12 +87,12 @@ def log_current_state(sim, log, trackable_interventions_by_label = None):
     current_info['scale'] = np.copy(sim.people.scale)
     
     #Record viral (i.e. infection) info
-    current_info['susceptible'] = np.copy(sim.people.susceptible) #TODO: I can fully infer susceptible from infectious and inactive; so should I not record this (which will have the most Trues) and then store the other two only, and store them as sparse arrays
+    current_info['susceptible'] = np.copy(sim.people.susceptible) #NOTE: I can fully infer susceptible from infectious and inactive; so should I not record this (which will have the most Trues) and then store the other two only, and store them as sparse arrays
     current_info['infectious'] = np.copy(sim.people.infectious)
     current_info['inactive'] = np.copy(sim.people.inactive)
 
     #Record cell state info
-    current_info['normal'] = np.copy(sim.people.normal) #TODO: I can fully infer normal from cin and cancerous; so should I not record this (which will have the most Trues) and then store the other two only, and store them as sparse arrays
+    current_info['normal'] = np.copy(sim.people.normal) #NOTE: I can fully infer normal from cin and cancerous; so should I not record this (which will have the most Trues) and then store the other two only, and store them as sparse arrays
     current_info['cin'] = np.copy(sim.people.cin)
     current_info['cancerous'] = np.copy(sim.people.cancerous)
 
@@ -367,7 +366,7 @@ def plot_sankey(log, included_interventions_by_label = None, referral_time_cutof
     Notes: 
         -> referral_time_cutoff = 8 as in our modelling, all followups are first available within 4 timesteps (1 year) and {GlobalScreeningParameters.abandon_followup_invites_threshold} is set to 1 year, meaning that any followups which could be modelled will have occured within 8 timesteps of the inciting previous intervention
         -> Agents may develop cancer while flowing from intervention A to B, thereby changing their scale. For consistency across our diagram, we each agent to have a fixed scale throughout the period of their flow on the diagram, determined by their scale at the final timepoint captured in the diagram. For example, an agent that flows (start, scale=1->)A->B->C(->end, scale=10) will be considered to have had scale=10 throughout, that is, cancer throughout. This is justified as (i)the length of a continuous flow can be at most a few years, so few relatively few cancers will develop during flow, especially because (ii) broadly speaking, those agents which develop cancer and made it through to even 2 interventions will have done so as a result of cancer and would have had cancer the whole time, again so the amount of distortion is small.
-        #TODO: check with Robyn to see if she agrees with this approach to dealing with the multiscale issue
+            #NOTE: this biases the scale of flows across the diagram towards agents with cancer but is not a biggie as the diagram is only to check the right flows are happening and not meant for any deeper conclusions than debugging/demonstrating the implementation works
     """
     import plotly.graph_objects as go
 
@@ -568,7 +567,6 @@ def plot_sankey(log, included_interventions_by_label = None, referral_time_cutof
                 ->for each consecutive pair in our list of nodes (pairs overlap, of course), see if the pair already is a key in edge_value_by_source_and_target. If so, add our saved agent flow size to it, else, intiialise a new entry in the dictionary with this agent flow size
 
     By deleting entries from our log at each timestep (noting we are using a copy of the log so we aren't losing information), we know if we have missed some flow - if any agents remain in any outcomes
-        -> therefore, have an OPTIONAL - TODO: have a parameter for this check!!! - check over each intervention and timestep and outcome that there are no more agents listed. If there are agents listed, and I have done no time-truncation of the original log I am passing in, that means agents are sneaking into later parts of the screening programme without coming from prmary screening and I am therefore missing that - which shouldnt happen  (must be optional, as if I truncate over time, this check can fail e.g. by truncating off a cytology that promts a secondary screen)
     
     WE NOTE THAT this approach imposes no assumptions on how the algorithm should move agents between interventions, it simply keeps track of all agents for {referral_time_cutoff} timesteps after the most recent intervention it was involved in, and says the agent has 'flowed' from one intervention to the next if it has reached that next intervention within that number of timesteps (e.g. if referral_time_cutoff==3, B can happen just after A in the same timestep, or up to 3 timesteps after A (inclusive) and we will define in all cases some flow from A to B).
         -> this has the advantage that we can know for sure that agents are flowing in the right ways between interventions, by confirming that there are no flows that violate what we intend the screening algorithm to be doing. ]

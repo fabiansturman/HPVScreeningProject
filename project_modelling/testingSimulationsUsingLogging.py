@@ -136,8 +136,6 @@ if __name__=="__main__":
         #As there is no benefit to making referral_time_cutoff too large (because why look at longer intervals than are modelled between any two treatments), we can make the optimal equality {referral_time_cutoff=4*(1+abandon_followup_invites_threshold)}. This has the additional benefit that, provided all followups in our log should have an ancestor primary screening in our log (i.e. none are orpahned by primary screen filtering processes), any remaining followups that have not contributed to flows indicate a bug/misunderstanding of the modelled followup times
         #This yields inequality {tail_buffer_years >= 3*(1 + abandon_followup_invites_threshold)}, with {referral_time_cutoff=4*(1+abandon_followup_invites_threshold)} 
             #-> e.g. with abandon_followup_invites_threshold=1, we need referral_time_cutoff:=8 and tail_buffer_years>=6 (with tail_buffer_years=6 for optimality, not generating additional simulated data that is never used!)
-        
-                #TODO ^ is the reasoning above correct? I think the bound maybe isnt as tight as absolutely needed but still!
     #"""
 
 

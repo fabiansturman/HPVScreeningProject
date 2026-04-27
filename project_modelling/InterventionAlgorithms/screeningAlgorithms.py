@@ -315,7 +315,7 @@ ablation = treat_num_canceragnostic(eligibility=hsil_by_colpo,
                         prob=GlobalScreeningParameters.ablate_prob, 
                         #No need to add an age range here, as by default subclasses of BaseTreatment have an age range of [0,99] - that is, they don't restrict the age range beyond any calculations in the provided eligibility function 
                         product='ablation', 
-                        label='ablation') #TODO: can model a max capacity with treat_num too, but as it stands we pretend infinite capacity
+                        label='ablation') #NOTE: can model a max capacity with treat_num too, but as it stands we pretend infinite capacity
 
 cancer_by_colpo = lambda sim: sim.get_intervention('colposcopy').outcomes['cancer'] 
 general_cancer_treatment = GeneralCancerTreatment(p_clear=GlobalScreeningParameters.cancer_treatment_effectiveness, p_extend=0.00, extend_dur=dict(dist='normal', par1=18.0, par2=2.))
@@ -330,7 +330,6 @@ gct = treat_num_cancer(eligibility=cancer_by_colpo,
 
 
 
-#TODO: neaten the below! and in checking all of this ofc I will need to clear it up adn probs make it all neater with a big restructure anyways
 
 def get_interventions(v,u,a, switch_year=GlobalScreeningParameters.switch_year):
     interventions = [init_intervention_trackers] + get_routine_screening_interventions(v,u,a, switch_year) + [

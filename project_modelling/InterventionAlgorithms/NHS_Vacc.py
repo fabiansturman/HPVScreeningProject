@@ -70,7 +70,7 @@ Modelling girls and boys:
     -> right now, I am averaging girl and boy participation data and doing the vaccination regieme to both at the same time for years where there is sex-neutral vaccination. However, as boys have consistently lower vaccine uptake than girls, I suppose I could improve this!    
 
 Modelling beyond 2021:
-    -> Assuming 90% first dose coverage, and 80% second dose coverage in 2022. TODO: get vaccination uptake for 22,23,24 and then get a better assumption for coverage! Of course, will do a notable sensitivity analysis here too!    
+    -> Assuming constant% first dose coverage, and 80% second dose coverage in 2022, with this coverage with 60,80, or 90 percent depending on the case analysis
 """
 
 
@@ -134,7 +134,7 @@ vx_1921_d1 = hpv.routine_vx(prob=(0.85,(0.60+0.53)/2,(0.77+0.71)/2),
                          product='quadrivalent', 
                          eligibility=eligible_first_dose,
                         )
-vx_1921_d2 = hpv.routine_vx(prob=(0.82/0.85,0.64*2/(0.60+0.53),(0.59+0.48)/(0.77+0.71)), #TODO: something wrong this with second prob, perhaps combinging boys and gitrls doesnt work here
+vx_1921_d2 = hpv.routine_vx(prob=(0.82/0.85,0.64*2/(0.60+0.53),(0.59+0.48)/(0.77+0.71)),
                          start_year=2019,
                          end_year=2021,
                          sex=['f','m'],
