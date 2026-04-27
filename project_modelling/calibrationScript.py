@@ -65,7 +65,7 @@ if __name__=="__main__":
     Current cals that are running that I am yet to process into final cals (with their sibling cals)
 
     -> using Sophie's mixing matrices and base sensitivity analysis case otherwise
-    -> #TODO: this is the final pack of cals to start, for results by end of sunday
+    -> 
     -> 
         => **  **
         -show this result still in the appendix
@@ -82,14 +82,14 @@ if __name__=="__main__":
         => **  ** #TOD0: this is the third pack of cals to start, for results completed by noon saturday
  
     ->  doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
-    -> #TODO: this is the second pack of cals to start, so these results are completed by end of thursday
+    -> 
     -> 
         => **  **
     
     -> Apr20_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) doing a Sensitivity Analysis that is an a upper bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr25_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) as above
-    -> Apr25_3__8_8_8_68_68_95_95__96_7_13 : INPROGRESS this is a cal (on XPS) as above
-        => ** **
+    -> Apr25_3__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
+        => ** summarised into FinalPooledCalibration_8_8_8_68_68_95_95__96_7_13.pickle**
 
     -> Apr22_3__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis considering ohr rel imm of 0.1. (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr23_1__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above     
