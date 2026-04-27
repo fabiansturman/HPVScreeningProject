@@ -76,11 +76,11 @@ if __name__=="__main__":
         => **  ** #TODO: this is the current thing to focus on, REUSLTS BY NOON TUESDAY PLZ
         - this is the preferred choice of mixing matrix and what all the other sensitivtiy analyses will use (as well as the base case, which is this here)
 
-    ->  doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
+    -> Apr27_2__65_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on XPS) doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     ->  
     -> 
-        => **  ** #TOD0: this is the third pack of cals to start, for results completed by noon saturday
- 
+        => **  ** 
+        
     ->  doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> 
     -> 
@@ -114,7 +114,7 @@ if __name__=="__main__":
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr27_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/Apr27_2_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
