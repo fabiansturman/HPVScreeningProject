@@ -130,7 +130,7 @@ def routine_screen_eligible_under50(sim,
             if vaccinated:
                 screen_interval = v
             elif current_year - (age-12) >=2008:
-                #equivalent to checking 'year when agent was 12 years old'>=2008, i.e. agent was elgiible for vaccination when aged 12
+                #equivalent to checking 'year when agent was 12 years old'>=2008, i.e. agent was elgiible for vaccination when aged 12 (note that we have established by now the agent is aged over 12, so this will not erroneously assign children as 'vaccine-elgiible')
                 screen_interval = u
             else:
                 #in this case, the agent was older than 12 years old in 2008
@@ -194,7 +194,7 @@ def routine_screen_eligible_50andover(sim,
             if vaccinated:
                 screen_interval = v
             elif current_year - (age-12) >=2008:
-                #equivalent to checking 'year when agent was 12 years old'>=2008, i.e. agent was elgiible for vaccination when aged 12
+                #equivalent to checking 'year when agent was 12 years old'>=2008, i.e. agent was elgiible for vaccination when aged 12 (note that we have established by now the agent is aged over 12, so this will not erroneously assign children as 'vaccine-elgiible')
                 screen_interval = u
             else:
                 #in this case, the agent was older than 12 years old in 2008

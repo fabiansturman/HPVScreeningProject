@@ -328,7 +328,7 @@ def get_timeseries_from_log(log,
 
         #Get which agents are eligible/ineligible for vaccination
         year_when_12_by_pid = current_year - (log_at_timepoint['age'] - 12) #for agent i, year_when_12_by_pid gives the year when this agent turns/did turn 12 years old
-        eligible_by_pid = year_when_12_by_pid >= vacc_intro_year #assumes all agents are born at the start of the year, not modelling mid-year birthdays as a possibility
+        eligible_by_pid = (year_when_12_by_pid >= vacc_intro_year) & (log_at_timepoint['age'] >= 12) #assumes all agents are born at the start of the year, not modelling mid-year birthdays as a possibility. Note that an individual is only eligible if they are both at least 12 years old and turned 12 late enough.
         ineligible_by_pid = ~eligible_by_pid
 
         #Get the scale of each agent (we assign any agent which is not female or not alive a scale of 0, so that when we aggregate agent's sacles to get number over a population, we stay within the subpopulation of interest)
@@ -1682,9 +1682,102 @@ def ttest_powerplot(ax, lower_std_bound, upper_std_bound, effect_size_lower=-4, 
 
 
 if __name__=="__main__":
-    fig, axs = plt.subplots(4,4)
+    fig, ax = plt.subplots(1,1)
 
-    """plot_alg_comparison_grid(axs, ['5_5_8_8_68_76_55_55_9_9__96_7_13',
+    #wierd thing: V5U5A5 has different rates of screens for vaccpop, eligibleunvaccpop, and eligiblepop even though these pops should all be the same demographics so should have no difference between them with this alg
+    # - plotting population size of eligible pop, or eligible unvaccpop, i get nonzewro population size at the very staert which must be wrong as noone is elgible?
+    plot_quant_over_time(ax,
+                         'routine_screens_eligibleunvaccpop' ,#eligibleunvaccpop
+                         True, #normalise_per_100k
+                        ['V_U_A5_8_8_68_76_55_55_9_9__96_7_13'],
+                         True, #show_quartiles
+                         False,#show_normal_CI
+                         alg_colors={'V_U_A5_8_8_68_76_55_55_9_9__96_7_13':'red'}
+                         )
+    plot_quant_over_time(ax,
+                         'routine_screens_vaccpop' ,#eligibleunvaccpop
+                         True, #normalise_per_100k
+                        ['V_U_A5_8_8_68_76_55_55_9_9__96_7_13'],
+                         True, #show_quartiles
+                         False,#show_normal_CI
+                         alg_colors={'V_U_A5_8_8_68_76_55_55_9_9__96_7_13':'green'}
+                         )
+    plot_quant_over_time(ax,
+                         'routine_screens_eligiblepop' ,#eligibleunvaccpop
+                         True, #normalise_per_100k
+                        ['V_U_A5_8_8_68_76_55_55_9_9__96_7_13'],
+                         True, #show_quartiles
+                         False,#show_normal_CI
+                         alg_colors={'V_U_A5_8_8_68_76_55_55_9_9__96_7_13':'blue'}
+                         )
+    plot_quant_over_time(ax,
+                         'routine_screens_ineligiblepop' ,#eligibleunvaccpop
+                         True, #normalise_per_100k
+                        ['V_U_A5_8_8_68_76_55_55_9_9__96_7_13'],
+                         True, #show_quartiles
+                         False,#show_normal_CI
+                         alg_colors={'V_U_A5_8_8_68_76_55_55_9_9__96_7_13':'grey'}
+                         )
+
+
+
+    """plot_quant_over_time(ax,
+                         'routine_screens_eligibleunvaccpop' ,#eligibleunvaccpop
+                         True, #normalise_per_100k
+                        ['V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                 #      'V7U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                   #     'V15U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                        'V_U5A5_8_8_68_76_55_55_9_9__96_7_13'],
+                         True, #show_quartiles
+                         False,#show_normal_CI
+                         )
+    plot_quant_over_time(ax,
+                         'routine_screens_vaccpop',
+                         True, #normalise_per_100k
+                        ['V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                   #     'V7U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                    #    'V15U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                        'V_U5A5_8_8_68_76_55_55_9_9__96_7_13'],
+                         True, #show_quartiles
+                         False,#show_normal_CI
+                      #   alg_colors={'V5U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
+                       # 'V7U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
+                        #'V15U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
+                        #'V_U5A5_8_8_68_76_55_55_9_9__96_7_13':'black'}
+                         )
+    plot_quant_over_time(ax,
+                         'routine_screens_eligiblepop',
+                         True, #normalise_per_100k
+                        ['V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                      #  'V7U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                       # 'V15U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                        'V_U5A5_8_8_68_76_55_55_9_9__96_7_13'],
+                         True, #show_quartiles
+                         False,#show_normal_CI
+                      #   alg_colors={'V5U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
+                       # 'V7U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
+                        #'V15U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
+                        #'V_U5A5_8_8_68_76_55_55_9_9__96_7_13':'black'}
+                         )"""
+
+    """
+    summarising my sanity check results:
+    - comparing increasing V interval from 5 yearly to never: 
+                                                            population-wise total screens (rate/100k): exactly what i expect
+                                                            vaccinated subpop total screens (rate/100k): as I expect - with a few screens happening for a long time, presumably because of +ve HPV tests
+
+    
+                                                            population-wise cancers,
+                                                            vacc cancers, 
+                                                            unvacc cancers
+                                                            unvacc vacc-eligible cancers,
+    """
+
+    
+
+    """
+    fig, axs = plt.subplots(4,4)
+    plot_alg_comparison_grid(axs, ['5_5_8_8_68_76_55_55_9_9__96_7_13',
                                    '5_none_8_8_68_76_55_55_9_9__96_7_13',
                                    '5plusnone_8_8_68_76_55_55_9_9__96_7_13',
                                    'none_none_8_8_68_76_55_55_9_9__96_7_13'],
@@ -1712,20 +1805,7 @@ if __name__=="__main__":
                    False
                    )"""
 
-    """plot_quant_over_time(ax,
-                         'routine_screens_ineligiblepop', #eligibleun
-                         True, #normalise_per_100k
-                         ['5_5_8_8_68_76_55_55_9_9__96_7_13', 
-                          '5_none_8_8_68_76_55_55_9_9__96_7_13',
-                          '5plusnone_8_8_68_76_55_55_9_9__96_7_13',
-                          'none_none_8_8_68_76_55_55_9_9__96_7_13'],
-                         False, #show_quartiles
-                         True,#show_normal_CI
-                         alg_labels = {'5_5_8_8_68_76_55_55_9_9__96_7_13':'5_5', 
-                                        '5_none_8_8_68_76_55_55_9_9__96_7_13':'5_none',
-                                        '5plusnone_8_8_68_76_55_55_9_9__96_7_13':'5plusnone',
-                                        'none_none_8_8_68_76_55_55_9_9__96_7_13':'none_none'}
-                         )"""
+    
     plt.legend()
     plt.show()
 
