@@ -96,7 +96,7 @@ sig_level = 0.01
 screening_algorithm_stems = ['V5U5A5', 'V7U5A5',    'V10U5A5',      'V15U5A5',  'V_U5A5',
                                                     'V10U7A5',      'V15U7A5',  'V_U7A5', #this is an intermediate stage of algs to consider, with a slightly increased interval for U but nothing crazy
                                                                     'V15U10A5',             #then this is a later intermediate stage
-                                                                                'V_U15A5'    #this is a late stage with a very large unvacc vacc eligible interval and no screening for vacc
+                                                                                'V_U15A5',    #this is a late stage with a very large unvacc vacc eligible interval and no screening for vacc
                                        'V7U7A5',    'V10U10A5',     'V15U15A5', 'V_U_A5',
                                                     'V10U10A10',    'V15U10A10','V_U10A10',
                                                                     'V15U15A10','V_U_A10',
