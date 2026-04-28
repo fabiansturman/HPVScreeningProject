@@ -10,7 +10,7 @@ from math import floor
 cancer_treatment_effectiveness = 0.8
 
 #Set compliance levels
-projected_teen_vaccination_uptake = 0.8 #0.8 #from 2022 onwards, the probability that an agent in the UK at age 12-13 will take up the HPV vaccine dose offered to them at some point in that time 
+projected_teen_vaccination_uptake = 0.8 #from 2022 onwards, the probability that an agent in the UK at age 12-13 will take up the HPV vaccine dose offered to them at some point in that time 
 
 primary_screen_prob_under50 = 0.68 #Probability of a person under 50 taking up their primary screening invitation
 primary_screen_prob_50andover = 0.76 #Probability of a person 50 or over taking up their primary screening invitation

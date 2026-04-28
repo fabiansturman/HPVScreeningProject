@@ -34,7 +34,7 @@ plot_start = True
 
 
 #Name for the dummy calibration
-cal_name = "project_modelling/calibration_results/dummy_25Apr26_7"
+cal_name = "project_modelling/calibration_results/dummy_28Apr26_1"
 
 #Simulation start and end dates
 start = 1980
@@ -47,7 +47,7 @@ cancerous_genotype_dist_year=2011
 cancerous_genotype_dist_TRUEDATA = [0.677,0.188,0.163,0.059] #hpv16, hpv18, hi5, ohr
 
 #Number of repeat runs for each parameter set
-repeat_runs = 1#10
+repeat_runs = 10
 
 #Load in final calibration
 with open(cal_filename, 'rb') as file:

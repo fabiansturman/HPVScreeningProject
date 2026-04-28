@@ -19,9 +19,6 @@ if __name__=="__main__":
     final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
     par_labels = loadeddata['par_labels']
 
-    #TODO: -----remove the below-----
-    final_cal_data = final_cal_data[:2] #having just 2 parameter examples to speed things up
-    #TODO: -----remove the above-----
 
     #Initialise a blank file to contain the results generated for this algorithm (the function provides the user the option to not override an existing file, if an existing file is detected)
     initialise_blank_ts_file(algs = [alg_name])
