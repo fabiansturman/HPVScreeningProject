@@ -21,7 +21,7 @@ vaccination_algorithm = NHS_Vacc.vaccinations
 
 
 ##THE FOLLOWING MAY BE CHANGED TO SET DIFFERENT SETS OF SEEDS OVER WHICH TO GENERATE FINAL RESULTS##
-seeds = [0,1,2,3] # Define seeds we are generating the results over (these raw seeds will be offset by parameterisation number, so that we get a much wider set of seeds when iterating over different parameters from the calibration )
+seeds = [0,1]#,2,3] # Define seeds we are generating the results over (these raw seeds will be offset by parameterisation number, so that we get a much wider set of seeds when iterating over different parameters from the calibration )
 
 
 ##THE FOLLOWING MAY BE CHANGED *WITH CAUTION* TO DEFINE DIFFERENT ENCODING OF SCENARIOS IN FILENAMES##
