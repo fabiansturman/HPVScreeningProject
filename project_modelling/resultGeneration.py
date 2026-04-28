@@ -193,7 +193,6 @@ stems_to_be_split_by_genotype_and_population = [
     "inc_cin",
     "inc_cancers",
     "inc_cancers_diagnosed", 
-    "inc_cancer_deaths",
     "prev_infectious",
     "prev_cin",
     "prev_cancers",
@@ -434,18 +433,25 @@ def get_timeseries_from_log(log,
 
             for population in vacc_states:
                 #Restrict our focus to the population of interest to track infectiousness for these genotypes in each subpopulation seperately
+                subpopulation_scale_by_pid = deepcopy(scale_by_pid) #this scales any individuals not in the current population of interest to 0
                 if population == '_fullpop':
                     current_cancers_of_interest = currently_cancers_from_genotypes_of_interest
                 elif population == '_vaccpop':
                     current_cancers_of_interest = np.logical_and(currently_cancers_from_genotypes_of_interest, vacc_by_pid)
+                    subpopulation_scale_by_pid = np.multiply(subpopulation_scale_by_pid, vacc_by_pid)
                 elif population == '_unvaccpop':
                     current_cancers_of_interest = np.logical_and(currently_cancers_from_genotypes_of_interest, unvacc_by_pid)
+                    subpopulation_scale_by_pid = np.multiply(subpopulation_scale_by_pid, unvacc_by_pid)
                 elif population == '_eligiblepop':
                     current_cancers_of_interest = np.logical_and(currently_cancers_from_genotypes_of_interest, eligible_by_pid)
+                    subpopulation_scale_by_pid = np.multiply(subpopulation_scale_by_pid, eligible_by_pid)
                 elif population == '_ineligiblepop':
                     current_cancers_of_interest = np.logical_and(currently_cancers_from_genotypes_of_interest, ineligible_by_pid)
+                    subpopulation_scale_by_pid = np.multiply(subpopulation_scale_by_pid, ineligible_by_pid)
                 elif population == '_eligibleunvaccpop':
                     current_cancers_of_interest = np.logical_and(currently_cancers_from_genotypes_of_interest, 
+                                                                    np.logical_and(eligible_by_pid,unvacc_by_pid))
+                    subpopulation_scale_by_pid = np.multiply(subpopulation_scale_by_pid, 
                                                                     np.logical_and(eligible_by_pid,unvacc_by_pid))
                 else:
                     print("Unrecognised vacc state - appear to be missing a population partition in this section of get_timeseries_from_log funtion")
@@ -457,7 +463,6 @@ def get_timeseries_from_log(log,
             
                 pids_with_cancer_at_previous_timepoint = pids_with_cancer_iplus1_timepoints_ago[0]
                 pids_currently_with_cancer = set(np.where(current_cancers_of_interest)[0]) #a set of the pids of all agents currently with cancer
-
                 pids_newly_with_cancer = list(pids_currently_with_cancer - pids_with_cancer_at_previous_timepoint) #do difference of sets, then convert to a list to do fancy indexing
                 incidence = np.sum(scale_by_pid[pids_newly_with_cancer])
                 timeseries['inc_cancers'+population+genotype].append(incidence)
@@ -475,7 +480,7 @@ def get_timeseries_from_log(log,
                 #Calculate number of cancer diagnoses and update state tracker of cumulative set of cancer-diangosed pids 
                 current_cancer_diagnosis_set = set(log_at_timepoint['interventions']['colposcopy']['cancer'])
                 state_trackers[population+genotype][0] = state_trackers[population+genotype][0].union(current_cancer_diagnosis_set)
-                num_new_diagnoses = np.sum(scale_by_pid[list(current_cancer_diagnosis_set)])
+                num_new_diagnoses = np.sum(subpopulation_scale_by_pid[list(current_cancer_diagnosis_set)]) #while it is reasonable to model diagnosis of a cancer of genotype g1 as equivalent to the diagnosis of cancer with genotype g2 (as treatment of one will treat the other, especially as diagnosis prompts personalised investigation), to individually track cancer diagnoses in subpopulations we must do this
                 timeseries['inc_cancers_diagnosed'+population+genotype].append(num_new_diagnoses)
 
                 #Calcuate number undiagnosed after 5 years (cutoff: does NOT include those diagnosed exactly 5 years of timesteps after development of cancer)
@@ -1684,81 +1689,21 @@ def ttest_powerplot(ax, lower_std_bound, upper_std_bound, effect_size_lower=-4, 
 if __name__=="__main__":
     fig, ax = plt.subplots(1,1)
 
-    #wierd thing: V5U5A5 has different rates of screens for vaccpop, eligibleunvaccpop, and eligiblepop even though these pops should all be the same demographics so should have no difference between them with this alg
-    # - plotting population size of eligible pop, or eligible unvaccpop, i get nonzewro population size at the very staert which must be wrong as noone is elgible?
-    plot_quant_over_time(ax,
-                         'routine_screens_eligibleunvaccpop' ,#eligibleunvaccpop
-                         True, #normalise_per_100k
-                        ['V_U_A5_8_8_68_76_55_55_9_9__96_7_13'],
-                         True, #show_quartiles
-                         False,#show_normal_CI
-                         alg_colors={'V_U_A5_8_8_68_76_55_55_9_9__96_7_13':'red'}
-                         )
-    plot_quant_over_time(ax,
-                         'routine_screens_vaccpop' ,#eligibleunvaccpop
-                         True, #normalise_per_100k
-                        ['V_U_A5_8_8_68_76_55_55_9_9__96_7_13'],
-                         True, #show_quartiles
-                         False,#show_normal_CI
-                         alg_colors={'V_U_A5_8_8_68_76_55_55_9_9__96_7_13':'green'}
-                         )
-    plot_quant_over_time(ax,
-                         'routine_screens_eligiblepop' ,#eligibleunvaccpop
-                         True, #normalise_per_100k
-                        ['V_U_A5_8_8_68_76_55_55_9_9__96_7_13'],
-                         True, #show_quartiles
-                         False,#show_normal_CI
-                         alg_colors={'V_U_A5_8_8_68_76_55_55_9_9__96_7_13':'blue'}
-                         )
-    plot_quant_over_time(ax,
-                         'routine_screens_ineligiblepop' ,#eligibleunvaccpop
-                         True, #normalise_per_100k
-                        ['V_U_A5_8_8_68_76_55_55_9_9__96_7_13'],
-                         True, #show_quartiles
-                         False,#show_normal_CI
-                         alg_colors={'V_U_A5_8_8_68_76_55_55_9_9__96_7_13':'grey'}
-                         )
+    
 
 
-
-    """plot_quant_over_time(ax,
-                         'routine_screens_eligibleunvaccpop' ,#eligibleunvaccpop
+    plot_quant_over_time(ax,
+                        # 'popsize_eligiblepop', OK
+                        #    'inc_cin_eligiblepop_alltypes',
+                         'inc_cancers_diagnosed_eligiblepop_alltypes',  #BAD
                          True, #normalise_per_100k
                         ['V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                 #      'V7U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                   #     'V15U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                        'V_U5A5_8_8_68_76_55_55_9_9__96_7_13'],
+                    #   'V7U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                     #  'V15U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                        ],
                          True, #show_quartiles
                          False,#show_normal_CI
                          )
-    plot_quant_over_time(ax,
-                         'routine_screens_vaccpop',
-                         True, #normalise_per_100k
-                        ['V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                   #     'V7U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                    #    'V15U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                        'V_U5A5_8_8_68_76_55_55_9_9__96_7_13'],
-                         True, #show_quartiles
-                         False,#show_normal_CI
-                      #   alg_colors={'V5U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
-                       # 'V7U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
-                        #'V15U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
-                        #'V_U5A5_8_8_68_76_55_55_9_9__96_7_13':'black'}
-                         )
-    plot_quant_over_time(ax,
-                         'routine_screens_eligiblepop',
-                         True, #normalise_per_100k
-                        ['V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                      #  'V7U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                       # 'V15U5A5_8_8_68_76_55_55_9_9__96_7_13',
-                        'V_U5A5_8_8_68_76_55_55_9_9__96_7_13'],
-                         True, #show_quartiles
-                         False,#show_normal_CI
-                      #   alg_colors={'V5U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
-                       # 'V7U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
-                        #'V15U5A5_8_8_68_76_55_55_9_9__96_7_13':'black',
-                        #'V_U5A5_8_8_68_76_55_55_9_9__96_7_13':'black'}
-                         )"""
 
     """
     summarising my sanity check results:
@@ -1826,7 +1771,6 @@ We then record the following quantities for all combinations of population parti
 -'inc_cin': incidence of new individuals with CIN state
 -'inc_cancers': incidence of new individuals with cancer
 -'inc_cancers_diagnosed': incidence of new cancer diagnoses (through colposcopy triggered by regular screening only)
--'inc_cancer_deaths': incidence of deaths due to cancer
 -'prev_infectious': prevalence of infectious individuals 
 -'prev_cin': prevalence of individuals with CIN state
 -'prev_cancers': prevalence of individuals with cancer 
