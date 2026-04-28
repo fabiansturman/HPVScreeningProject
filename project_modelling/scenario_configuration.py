@@ -8,8 +8,8 @@ from InterventionAlgorithms import screeningAlgorithms, NHS_Vacc, GlobalScreenin
 
 
 ##THE FOLLOWING MAY BE CHANGED TO SET DIFFERENT INTERVENTIONS##
-screening_algorithm_stub_name = 'V10U5A5' #set the name we will be using for screening algorithms
-screening_algorithm = screeningAlgorithms.get_interventions(v=10,u=5,a=5)
+screening_algorithm_stub_name = 'V5U5A5' #set the name we will be using for screening algorithms
+screening_algorithm = screeningAlgorithms.get_interventions(v=5,u=5,a=5)
 """                                                         ^
                                                             v = screening interval for vaccinated individuals
                                                             u = screening interval for unvaccinated vaccine-elgiible individuals
@@ -21,7 +21,7 @@ vaccination_algorithm = NHS_Vacc.vaccinations
 
 
 ##THE FOLLOWING MAY BE CHANGED TO SET DIFFERENT SETS OF SEEDS OVER WHICH TO GENERATE FINAL RESULTS##
-seeds = [0,1]#,2,3] # Define seeds we are generating the results over (these raw seeds will be offset by parameterisation number, so that we get a much wider set of seeds when iterating over different parameters from the calibration )
+seeds = [2]#[0,1,2] # Define seeds we are generating the results over (these raw seeds will be offset by parameterisation number, so that we get a much wider set of seeds when iterating over different parameters from the calibration )
 
 
 ##THE FOLLOWING MAY BE CHANGED *WITH CAUTION* TO DEFINE DIFFERENT ENCODING OF SCENARIOS IN FILENAMES##
