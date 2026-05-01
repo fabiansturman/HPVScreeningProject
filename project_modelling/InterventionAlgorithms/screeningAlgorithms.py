@@ -141,8 +141,7 @@ def routine_screen_eligible_under50(sim,
             if screen_interval == 0:
                 if last_hpv_result==1:
                     #if last HPV DNA test result was positive, then due a followup after 3 years even though otherwise they would be not be eligible for any screenings 
-                    screen_interval = min(3, screen_interval) 
-                    if sim.t<date_screened+screen_interval/sim['dt']:
+                    if sim.t<date_screened+3/sim['dt']:
                         eligible[pid]=False 
                 else:
                     eligible[pid]=False
