@@ -77,7 +77,7 @@ if __name__=="__main__":
 
     -> Apr27_2__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr30_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
-    -> 
+    ->  May1_1__65_68_76_55_55_9_9__96_7_13 : INPROGRESS this is a cal (on XPS) as above
         => **  ** 
         
     ->  doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
@@ -113,7 +113,7 @@ if __name__=="__main__":
     """
 
     # Create the calibration object, run it, and plot the results
-    name =  f"project_modelling/calibration_results/Apr30_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
+    name =  f"project_modelling/calibration_results/May1_1_{calibration_code}" # "calibration_results/Feb14_1" #"calibration_results/Feb13_1"
     
     calib = hpv.Calibration(
         sim,
