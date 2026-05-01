@@ -168,7 +168,6 @@ colors_by_algorithm_stem = {
 vacc_cases = ['_6', '_8', '_9'] #these are the codes denoting 60%, 80%, and 90% teen vaccine uptake, respectively
 cal_cases = { #this dictionary gives the different sensitivity analyses we have considered (other than sensitivity analysis over vaccination levels)
     'BASE': '_8_68_76_55_55_9_9__96_7_13', #this suffix to resultfile names means we are dealing with the base case of all our parameters
-    'LOWCTE' : '_65_68_76_55_55_9_9__96_7_13'
 }
 
 # define the algorithms that we could load in pickle files for (i.e. cartesian product between the screening_algorithm_stems available, the vaccination cases available, and the sensivity analyses we are doing)
@@ -212,6 +211,8 @@ for stem in stems_to_be_split_by_population_only:
     for population in vacc_states:
         data_names.append(stem+population)
 
+#Hard-coded total cancer incidence by year as in our dataset (real_world_data/new_cervical_cancer_cases_ENGSCALED1P19TOUK.csv), quartered by year (i.e. assuming even distribution of cancer diagnsoses in England by annual quarter)    
+cancer_incidence_history = {129: 620.5, 130: 620.5, 131: 620.5, 132: 620.5, 133: 659.75, 134: 659.75, 135: 659.75, 136: 659.75, 137: 647.5, 138: 647.5, 139: 647.5, 140: 647.5, 141: 629.25, 142: 629.25, 143: 629.25, 144: 629.25, 145: 648.5, 146: 648.5, 147: 648.5, 148: 648.5, 149: 647.75, 150: 647.75, 151: 647.75, 152: 647.75, 153: 673.25, 154: 673.25, 155: 673.25, 156: 673.25, 157: 683.5, 158: 683.5, 159: 683.5, 160: 683.5, 161: 592.0, 162: 592.0, 163: 592.0, 164: 592.0, 165: 590.0, 166: 590.0, 167: 590.0, 168: 590.0, 169: 660.0, 170: 660.0, 171: 660.0, 172: 660.0}
 
 
 
@@ -769,7 +770,101 @@ def run_sim_and_get_infection_histogram(seed:int,
         
     return all_prevalence_logs
 
-###- (4) UTILITY FUNCTIONALITY -###
+###- (4) UTILITY FUNCTIONALITY -###    
+def get_history_matches_paramseeds(alg, 
+                                   data_name = 'inc_cancers_fullpop_alltypes',
+                                   observations_by_tp = cancer_incidence_history,
+                                   error_limit = 0.2, #informed by what we consider a sufficiently good calibration - this is a fair quantity to also use as a history-match cutoff
+                                   normalise_per_100k = False,
+                                   smoothing_kernel=4,
+                                   ax=None,
+                                    ):
+    """
+    Finds the set of simulation-runs for specified algorithm which match observed history within specified margin of error.
+
+    alg (str): the algorithm whose data file to load (and whose runs to analyse)
+    data_name (str): the name of the recorded timeseries quantity against which we are evaluating runs
+    observations_by_tp (dict(int, float)): Dictionary mapping timepoints in our simulation to observed values of quantities in the real world
+        NOTE: timepoints refer to indices in the loaded timeseries, starting at 0 (in our simulations, this sets 1980.0 as tp=0, and the final timepoint is tp=300, which refers to 2054.75 (i.e. 4th timepoint in year 2054))
+    error_limit: the maximum error (defined as a NORMALISED ABSOLUTE ERROR between simulated timeseries and observed values, to match GOF calculation as in HPVsim default) allowed beyond which we reject a timeseries and associated simulation-run
+    normalise_per_100k: whether or not to convert all simulated timeseries to rates-per-100k before comparison to observations
+    smoothing_kernel (int): width (in timepoints) of moving-average smoothing applied to timeseries (after normalising, if applicable, and) before comparison with observations
+                        ^ a value of 1 indicates no smoothing
+    ax: matplotlib axis to show what we have eliminated, if specified
+    
+    Returns {set of parameter-seed pairs which index the 'passing' runs}, number of discarded parameter-seed pairs
+    """
+    #Checking parameters
+    assert data_name in data_names
+    assert alg in algorithms
+    
+    #Determine what our population of interest is
+    pop = get_relevant_pop_name(data_name)
+
+    #Load relevant timeseriess
+    try:
+        #Load file containing relevant timeseriess
+        with open(f"project_modelling/pickled_results/{alg}.pickle", "rb") as f:
+            loaded_data = pickle.load(f)
+            alg_timeseriess = loaded_data[data_name] #alg_timeseries = {(seed, parametersation):[timeseries]}
+            pop_timeseriess = loaded_data[pop]
+
+            #Convert timeseriess to numpy arrays and normalise if needed
+            for seed_par_pair in alg_timeseriess.keys():
+                alg_timeseriess[seed_par_pair] = np.array(alg_timeseriess[seed_par_pair]) 
+
+                if normalise_per_100k:
+                    denominator = np.array(pop_timeseriess[seed_par_pair])
+                    alg_timeseriess[seed_par_pair] = np.divide(alg_timeseriess[seed_par_pair], denominator)
+                    alg_timeseriess[seed_par_pair] = alg_timeseriess[seed_par_pair] * 100_000
+    except Exception as e:
+            print(f"Unable to open and/or process file project_modelling/pickled_results/{alg}.pickle. Terminating")
+            print(e)
+            quit()
+
+    #Perform smoothing, if required
+    if smoothing_kernel>1: #no smoothing if kernel is 1 (and a value under 1 is nonsensical)
+        for seed_par_pair in alg_timeseriess.keys():
+            alg_timeseriess[seed_par_pair] = smooth_list(alg_timeseriess[seed_par_pair], smoothing_kernel)
+
+    #Compute error for each seed_par_pair (i.e. each recorded simulation)
+    accepted_seed_par_pairs = set()
+    num_discarded = 0
+    for seed_par_pair in alg_timeseriess.keys():
+        simulated_timeseries = alg_timeseriess[seed_par_pair]
+        
+        if ax is not None:
+            ax.plot(simulated_timeseries, alpha=0.05)
+        
+        cumulative_error = 0
+
+        #Iterate over all the timepoints for which we have observations
+        for tp in observations_by_tp.keys():
+            delta_cumulative_error = np.abs(simulated_timeseries[tp] - observations_by_tp[tp])#np.pow(simulated_timeseries[tp] - observations_by_tp[tp], 2)
+            delta_cumulative_error /= np.abs(observations_by_tp[tp])#np.pow(observations_by_tp[tp],2)
+            cumulative_error += delta_cumulative_error
+        
+        
+        #Normalise error by number of timepoints to get average error
+        average_error = cumulative_error / len(observations_by_tp.keys())
+        
+        if average_error < error_limit:
+            accepted_seed_par_pairs.add(seed_par_pair)
+        else:
+            num_discarded +=1
+
+    if ax is not None:
+        #Plot rejected timeseries very visible
+        for seed_par_pair in set(alg_timeseriess.keys()) - accepted_seed_par_pairs:
+            simulated_timeseries = alg_timeseriess[seed_par_pair]
+            ax.plot(simulated_timeseries)
+
+        #Plot the ground truth against which we are evaluating visibly
+        ax.plot(observations_by_tp.keys(), observations_by_tp.values(), color='black', lw=2)
+
+
+    return accepted_seed_par_pairs, num_discarded
+
 def smooth_list(xs, smoothing_width):
     xs_smoothed = []
     for i in range(len(xs)):
@@ -872,7 +967,8 @@ def get_paired_difference_tss(data_name, normalise_per_100k,
     return difference_timeserieses, unmatched_compared, unmatched_baseline
 
 def get_simple_totals(data_name, start_tp = 0, end_tp=0, 
-                        normalise_per_100k=False, algs=[] ):
+                        normalise_per_100k=False, algs=[] ,
+                        accepted_paramandseeds = None):
     """
     For each algorithm in algs, returns a list of all the sums between start_tp and end_tp (inclusive) for data_name. Formatted as a dictionary.
 
@@ -881,6 +977,8 @@ def get_simple_totals(data_name, start_tp = 0, end_tp=0,
     end_tp: inclusive bound for the end of the sum
     normalise_per_100k (bool): whether to deal with the timeseries in terms of raw numbers, or as rates
     algs: the screening algorithms to calculate for
+    accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
+
     
     Returns:  {alg: [totals of data_name between timepoints [start_tp, end_tp] for alg in algs]}
     """
@@ -912,10 +1010,14 @@ def get_simple_totals(data_name, start_tp = 0, end_tp=0,
             if normalise_per_100k:
                 assert pop_timeseries is not None
 
-
+            #Filter for the simulation runs we have accepted for analysis
+            if accepted_paramandseeds is None:
+                accepted_paramandseeds = set(data_timeseries.keys())
+            else:
+                accepted_paramandseeds = accepted_paramandseeds.intersection(set(data_timeseries.keys()))
             
             #Compute totals
-            for seed, param_index in data_timeseries.keys():
+            for seed, param_index in accepted_paramandseeds:
                 #Convert this loaded timeseries to numpy array for ease of operations, normalising if needed
                 vs = np.array(data_timeseries[(seed, param_index)])
                 if normalise_per_100k:
@@ -933,7 +1035,8 @@ def get_simple_totals(data_name, start_tp = 0, end_tp=0,
 
 def get_total_diffs(data_name, compared_alg, baseline_alg,
                     start_tp=0, end_tp=0,
-                    normalise_per_100k=False):
+                    normalise_per_100k=False,
+                    accepted_paramandseeds = None):
     """
     For each algorithm in algs, returns all the differences between compared_alg and baseline_alg in the quantity {data_name} between timepoints start_tp and end_tp inclusive.
 
@@ -943,7 +1046,8 @@ def get_total_diffs(data_name, compared_alg, baseline_alg,
     start_tp: inclusive bound for the start of the sum
     end_tp: inclusive bound for the end of the sum
     normalise_per_100k (bool): whether to deal with the timeseries in terms of raw numbers, or as rates
-    
+    accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
+
     Returns:  Returns:    [list of difference-sums], including each param-seed pair that is successfully paired between the two algs, 
                 set(unpaired param-seed pairs for compared), 
                 set(unpaired param-seed pairs for baseline)
@@ -958,9 +1062,15 @@ def get_total_diffs(data_name, compared_alg, baseline_alg,
     #Find all the timeseriess of differences in dataname between the two algorithms
     difference_timeseriess, unpairedcompared, unpairedbaseline = get_paired_difference_tss(data_name, normalise_per_100k, compared_alg, baseline_alg)
 
+    #Filter for the simulation runs we have accepted for analysis
+    if accepted_paramandseeds is None:
+        accepted_paramandseeds = set(difference_timeseriess.keys())
+    else:
+        accepted_paramandseeds = accepted_paramandseeds.intersection(set(difference_timeseriess.keys()))
+
     #Find the sums for each difference timeseries
     difference_sums = []
-    for seed, param_index in difference_timeseriess.keys():
+    for seed, param_index in accepted_paramandseeds:
         dts = difference_timeseriess[(seed, param_index)]
         difference_sums.append(sum(dts[start_tp: end_tp+1]))
 
@@ -971,7 +1081,8 @@ def plot_quant_over_time(ax,
                          data_name, normalise_per_100k = True,
                          algs=None, show_quartiles = False, show_normal_CI = False,
                          alg_colors=algorithm_colors, alg_labels=algorithm_labels,
-                         burnin_timesteps=4*20, burnout_timesteps = 4*5, smoothing_kernel=4):
+                         burnin_timesteps=4*20, burnout_timesteps = 4*5, smoothing_kernel=4,
+                         accepted_paramandseeds = None):
     """
     ax: matplotlib.pyplot Axis object on which to plot
     data_name: what is to be plotted on the y axis (data_name<-data_names)
@@ -988,6 +1099,8 @@ def plot_quant_over_time(ax,
     burnin_timesteps: the number of timesteps to ignore at the start of the plot, for burnin
     burnout_timesteps: the number of timesteps to ignore at the end of the plot, s.t. post-moving-average-smoothing we don't get an incorrect dropoff at the end of the plot (if 0, no burnout)
     smoothing_kernel: width (in timesteps) of moving average filter over timeseries
+
+    accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
     """
     #Deal with parameters (assign defaults and check correctness)
     if algs is None:
@@ -1009,7 +1122,7 @@ def plot_quant_over_time(ax,
     lower_timeseries_by_alg = {}
     middle_timeseries_by_alg = {} 
     upper_timeseries_by_alg = {} 
-    for alg in algs:
+    for alg in tqdm(algs):
         try:
             #Load file
             with open(f"project_modelling/pickled_results/{alg}.pickle", "rb") as f:
@@ -1017,10 +1130,17 @@ def plot_quant_over_time(ax,
                 alg_timeseriess = loaded_data[data_name] #alg_timeseries = {(seed, parametersation):[timeseries]}
                 pop_timeseriess = loaded_data[pop]
 
+            #Filter for the simulation runs we have accepted for analysis
+            if accepted_paramandseeds is None:
+                accepted_paramandseeds = set(alg_timeseriess.keys())
+            else:
+                accepted_paramandseeds = accepted_paramandseeds.intersection(set(alg_timeseriess.keys()))
+
+
             #Preprocess loaded timeserieses for easy computation of mean/std over timepoints (turn into numpy array)
             alg_timeseriess_array = []
             pop_size_array = []
-            for key in alg_timeseriess.keys(): #iterate over (seed, parametersation) pairs, as this plotting does not need them as it does not do paired comparisons
+            for key in accepted_paramandseeds: #iterate over (seed, parametersation) pairs, as this plotting does not need them as it does not do paired comparisons
                 alg_timeseriess_array.append(alg_timeseriess[key])
                 pop_size_array.append(pop_timeseriess[key]) #timeseries with the same (seed, parameterisation) pair have corresponding positions in alg_timeseriess_array and pop_size_array
             
@@ -1091,13 +1211,15 @@ def plot_x_per_y(ax,
                  normalise_per_100k = False,
                  algs=None, show_quartiles = False, show_normal_CI = False,
                  alg_colors=algorithm_colors, alg_labels=algorithm_labels,
-                 burnin_timesteps=4*20, burnout_timesteps = 4*5, smoothing_kernel=4):
+                 burnin_timesteps=4*20, burnout_timesteps = 4*5, smoothing_kernel=4,
+                 accepted_paramandseeds = None):
     """
     Plots the ratio x/y over time (e.g. for plotting number of screens per positive cancer diagnosis). Finds ratio by pairing timeseries on parameterisation and seed.
 
     ax: matplotlib.pyplot Axis object on which to plot
     data_name_x: numerator of ratio to be plotted on the y axis (data_name_x<-data_names)
     data_name_y: denominator of ratio to be plotted on the y axis (data_name_y<-data_names)
+        NOTE: if y is 0, division by this is undefined and behaviour of the function becomes nuanced (in some cases it will miss out plotting for undefeined timepoints, in other cases it will not plot anything meaningful at all). This is not being changed as it is a pretty desired behaviour, and is accompaied by division by zero warnings in the console to alert the user.
     normalise_per_100k: if True, we do the ratio of rates, else we do the raw ratio (the 'per 100k' is really redundant, and only included for naming consistnecy with other functions)
 
     algs: the algorithms to be plotted (algs is to be a subset of algorithms)
@@ -1111,7 +1233,8 @@ def plot_x_per_y(ax,
     burnin_timesteps: the number of timesteps to ignore at the start of the plot, for burnin
     burnout_timesteps: the number of timesteps to ignore at the end of the plot, s.t. post-moving-average-smoothing we don't get an incorrect dropoff at the end of the plot (if 0, no burnout)
     smoothing_kernel: width (in timesteps) of moving average filter over timeseries
-    NOTE: if y is 0, division by this is undefined and behaviour of the function becomes nuanced (in some cases it will miss out plotting for undefeined timepoints, in other cases it will not plot anything meaningful at all). This is not being changed as it is a pretty desired behaviour, and is accompaied by division by zero warnings in the console to alert the user.
+    
+    accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
     """
     #Deal with parameters (assign defaults and check correctness)
     if algs is None:
@@ -1147,12 +1270,19 @@ def plot_x_per_y(ax,
                 numerator_pop_timeseriess = loaded_data[x_pop]
                 denominator_pop_timeseriess = loaded_data[y_pop]
 
+            #Filter for the simulation runs we have accepted for analysis
+            if accepted_paramandseeds is None:
+                accepted_paramandseeds = set(numerator_timeseriess.keys())
+            else:
+                accepted_paramandseeds = accepted_paramandseeds.intersection(set(numerator_timeseriess.keys()))
+
+
             #Preprocess loaded timeserieses for easy computation of mean/std over timepoints (turn into numpy array)
             numerator_timeseriess_array = []
             denominator_timeseriess_array = []
             numerator_pop_timeseriess_array = []
             denominator_pop_timeseriess_array = []
-            for key in numerator_timeseriess.keys(): #iterate over (seed, parametersation) pairs, as this plotting does not need them as it does not do paired comparisons
+            for key in accepted_paramandseeds: #iterate over (seed, parametersation) pairs, as this plotting does not need them as it does not do paired comparisons
                 numerator_timeseriess_array.append(numerator_timeseriess[key])
                 denominator_timeseriess_array.append(denominator_timeseriess[key]) #timeseries with the same (seed, parameterisation) pair have corresponding positions in alg_timeseriess_array and pop_size_array
                 numerator_pop_timeseriess_array.append(numerator_pop_timeseriess[key])
@@ -1235,7 +1365,8 @@ def plot_paired_difference_tss(ax,
                                burnin_timesteps = 4*20, burnout_timesteps=4*5, smoothing_kernel=4,
 
                                ax_histogram = None, start_tp=None, end_tp=None,
-                               compared_color=None, baseline_color=None,minimise=True):
+                               compared_color=None, baseline_color=None,minimise=True,
+                               accepted_paramandseeds = None):
     '''    
     Plots the difference in quantity over time between a baseline_alg and compared_alg. Finds difference by pairing timeserieses on parameterisation and seed.
 
@@ -1264,6 +1395,8 @@ def plot_paired_difference_tss(ax,
     minimise: For specifying the colors, determines whether minimising {data_name} is a good thing (e.g. minimising cancers is a good thing)
         #NOTE: the above pack of three parameters need not be specified when doing a histogram, in which case the full histogram is coloured with {color}
 
+    accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
+
     Returns ax if ax_histogram is None, else (ax, ax_histogram)
     '''
     #Deal with parameters (assign defaults and check correctness)
@@ -1291,9 +1424,15 @@ def plot_paired_difference_tss(ax,
     else:
         print("Fully matched.")
 
+    #Filter for the simulation runs we have accepted for analysis
+    if accepted_paramandseeds is None:
+        accepted_paramandseeds = set(difference_timeseriess.keys())
+    else:
+        accepted_paramandseeds = accepted_paramandseeds.intersection(set(difference_timeseriess.keys()))
+
     #Turn the paired difference dictionary of timeseriess to a 2D array
     difference_timeseriess_array = []
-    for key in difference_timeseriess.keys(): #iterate over (seed, parametersation) pairs, as this plotting does not need them as it does not do paired comparisons
+    for key in accepted_paramandseeds: #iterate over (seed, parametersation) pairs, as this plotting does not need them as it does not do paired comparisons
         difference_timeseriess_array.append(difference_timeseriess[key])
     difference_timeseriess_array = np.array(difference_timeseriess_array) #shape (#timeseries, #timepoints in each timeseries)
     n,T = difference_timeseriess_array.shape
@@ -1376,20 +1515,22 @@ def plot_paired_difference_tss(ax,
         return ax
 
     
-
 def plot_sum_barchart(ax, bar_colors, line_colors,
                             data_name, start_tp = 0, end_tp=0, 
                             normalise_per_100k=False, algs=[], 
                      xs=None, width=0.8,
-                      hatch=None):
+                      hatch=None,
+                      accepted_paramandseeds = None):
     """
     As get_simple_totals, but then takes the totals and plots them as bars to {ax}. Bar heights are medians and upper and lower quartiles indicated by superimposed error bars.
     Bar positions given by xs, widths by {width}.
     Bar colors given by bar_colors, while colours for any lines on the bars given by line_colors. Hatching pattern given by hatch.
+    
+    accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
     """
 
     #Get totals
-    totals_by_alg = get_simple_totals(data_name, start_tp, end_tp, normalise_per_100k, algs)
+    totals_by_alg = get_simple_totals(data_name, start_tp, end_tp, normalise_per_100k, algs, accepted_paramandseeds)
 
     #Get values to be plotted for each alg (ordered according to ordering defined in {algs})
     LQs = [np.percentile(totals_by_alg[alg], 25) for alg in algs]
@@ -1415,7 +1556,8 @@ def plot_sum_barchart(ax, bar_colors, line_colors,
 def plot_sum_barchart_all_vacc_levels(ax,data_name, alg_colors=algorithm_colors,
                                              start_tp = 0, end_tp=0, 
                                             normalise_per_100k=False, 
-                                            alg_stems = ['V5U5A5'], cal_case_suffix = '_8_68_76_55_55_9_9__96_7_13'):
+                                            alg_stems = ['V5U5A5'], cal_case_suffix = '_8_68_76_55_55_9_9__96_7_13',
+                                            accepted_paramandseeds = None):
     """
     As plot_sum_barchart but does a barchart that covers all vaccination uptake levels (60,80,90) and compares them. Some parameters from plot_sum_barchart removed in this function because they are hardcoded within this function to show the different vaccine levels nicely
     """
@@ -1432,7 +1574,8 @@ def plot_sum_barchart_all_vacc_levels(ax,data_name, alg_colors=algorithm_colors,
     plot_sum_barchart(ax, bar_colors, alg_colors, 
                       data_name, start_tp, end_tp, normalise_per_100k, algs, 
                       xs = [x + 0.3 for x in np.arange(len(algs))],
-                      width=0.2, hatch="xxxx")
+                      width=0.2, hatch="xxxx",
+                      accepted_paramandseeds=accepted_paramandseeds)
     
     #Now change over to LV
     algs_LV = []
@@ -1447,7 +1590,8 @@ def plot_sum_barchart_all_vacc_levels(ax,data_name, alg_colors=algorithm_colors,
     plot_sum_barchart(ax, bar_colors_LV, alg_colors_LV, 
                       data_name, start_tp, end_tp, normalise_per_100k, algs_LV, 
                       xs = np.arange(len(algs_LV)),
-                      width=0.2, hatch="////")
+                      width=0.2, hatch="////",
+                      accepted_paramandseeds=accepted_paramandseeds)
     
     #Now change over to HV
     algs_HV = []
@@ -1462,7 +1606,8 @@ def plot_sum_barchart_all_vacc_levels(ax,data_name, alg_colors=algorithm_colors,
     plot_sum_barchart(ax, bar_colors_HV, alg_colors_HV, 
                       data_name, start_tp, end_tp, normalise_per_100k, algs_HV, 
                       xs = [x + 0.6 for x in np.arange(len(algs_HV))],
-                      width=0.2, hatch="\\\\\\\\")
+                      width=0.2, hatch="\\\\\\\\",
+                      accepted_paramandseeds=accepted_paramandseeds)
 
     return ax
 
@@ -1471,10 +1616,13 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
                             normalise_per_100k=False,
                             significance=sig_level,
                             color_histogram_sides = True,
-                            minimise = True):
+                            minimise = True,
+                            accepted_paramandseeds = None):
     """
     Plots (onto {ax}) a full comparison between all the algorithms in {algs}, in terms of quantity {data_name} added up in timepoint range [start_tp, end_tp]. 
     
+    accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
+
     {color_histogram_sides} determines whether we colour the mass on the left and right side of each histogram according to the algorithm that beats the other one in the comparison when the weight is on that side - and this is determined by {minimise}; if True then the algorithm which led to the smaller (minimised) value is the winner, else it is the algorithm which led to the larger value. For example, we will want to minimise the number of cancers.
     """
     #Assert parameter correctness (some assertations of parameter correctness are delegated to the start of functions called by this one)
@@ -1500,7 +1648,8 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
             if i<j:
                 #Sqaures above the diagonal get a histogram of sum-differences between the two algorithms
                 total_diffs, unpairedcompared, unpairedbaseline = get_total_diffs(data_name, alg2, alg1, 
-                                              start_tp, end_tp, normalise_per_100k) 
+                                              start_tp, end_tp, normalise_per_100k,
+                                              accepted_paramandseeds) 
                 if len(unpairedcompared)>0 or len(unpairedbaseline)>0:
                     print(f"Failed to pair some of {alg1} and {alg2}'s runs. {len(total_diffs)} runs were still paired successfully between the algorithms.")
                 
@@ -1532,7 +1681,8 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
             elif i>j:
                 #Sqaures below the diagonal get a p value and colouring to determine which algorithm is better
                 total_diffs, _, _ = get_total_diffs(data_name, alg2, alg1, 
-                                                    start_tp, end_tp, normalise_per_100k) #No need to check about unpaired runs as we already do so for the upper triangular part of the figure
+                                                    start_tp, end_tp, normalise_per_100k,
+                                                    accepted_paramandseeds) #No need to check about unpaired runs as we already do so for the upper triangular part of the figure
                 ttest_result = stats.ttest_rel(total_diffs, 0, alternative='two-sided')
                 pvalue = ttest_result.pvalue
                 statistic = ttest_result.statistic
@@ -1599,7 +1749,8 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
 
 def get_elimination_table(alg_stems, cal_case_suffix, csv_filename, 
                           data_name='inc_cancers_allpop_alltypes', start_tp=240, end_tp=243,
-                          normalise_per_100k=True, target_sum=4):
+                          normalise_per_100k=True, target_sum=4,
+                          accepted_paramandseeds = None):
     """
     Saves a csv that forms a table of values relevant to cervical cancer elimination under different algorithms and vaccination levels.
 
@@ -1611,6 +1762,7 @@ def get_elimination_table(alg_stems, cal_case_suffix, csv_filename,
     end_tp: inclusive upper bound for the sum (defaults to end of 2040 (i.e. 2040.75) for a simulation starting at 1980 for a sim with dt=0.25)
     normalise_per_100k: whether all values should be normalised per 100k before adding up
     target_sum: the value which we want the sums to be strictly less than. If all sums for a particular alg at a particular vacc level are strictly below {target_sum}, then we write down an empirical probability of 1 of reaching the target sum level
+    accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
 
     Saves a csv file with one row for each algorithm, and one column-bunch for each vacc_level. ]
     Each column bunch contains columns for (LQ, Median, UQ) data_name sum between timepoints, and then the proportion of alg runs for that vacc level that got a sum under the target_sum
@@ -1631,7 +1783,7 @@ def get_elimination_table(alg_stems, cal_case_suffix, csv_filename,
         row=[alg_stem] #starting off row with the row heading
         for vacc_level in ['_6','_8','_9']:
             alg = f'{alg_stem}{vacc_level}{cal_case_suffix}'
-            totals = get_simple_totals(data_name, start_tp, end_tp, normalise_per_100k, algs=[alg])
+            totals = get_simple_totals(data_name, start_tp, end_tp, normalise_per_100k, algs=[alg], accepted_paramandseeds=accepted_paramandseeds)
             totals=np.array(totals[alg]) #extract this alg's data (the only data that was there), and convert to numpy array as this is needed for the following processing
             row.append("{:.2f}".format( np.percentile(totals, 25) ))
             row.append("{:.2f}".format( np.percentile(totals, 50) ))
@@ -1687,5 +1839,74 @@ def ttest_powerplot(ax, lower_std_bound, upper_std_bound, effect_size_lower=-4, 
 
 
 if __name__=="__main__":
+    #Specify the algorithms being plotted
+    algs_to_plot = ['V5U5A5', 'V7U5A5',    'V10U5A5',      'V15U5A5',  'V_U5A5',
+                                                    'V10U7A5',      'V15U7A5',  'V_U7A5', #this is an intermediate stage of algs to consider, with a slightly increased interval for U but nothing crazy
+                                                                    'V15U10A5',             #then this is a later intermediate stage
+                                                                                'V_U15A5',    #this is a late stage with a very large unvacc vacc eligible interval and no screening for vacc
+                                       'V7U7A5',    'V10U10A5',     'V15U15A5', 'V_U_A5',
+                                                    'V10U10A10',    
+                                                                    
+                                                                                'V_U_A_']
+    for i in range(len(algs_to_plot)):
+        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
 
-    pass
+     
+    #Specify the algorithm-runs we are to allow as valid, according to history matching (to deal a bit with the model randomness)
+    _, history_match_ax = plt.subplots(1,1)
+    accepted_paramseeds, num_rejected = get_history_matches_paramseeds(algs_to_plot[0],
+                                   'inc_cancers_fullpop_alltypes',
+                                   cancer_incidence_history,
+                                   0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                   ax=history_match_ax)
+    print(f"{len(accepted_paramseeds)} accepted, {num_rejected} rejected")
+
+    #Make the plot
+    _, ax = plt.subplots(1,1)
+    plot_quant_over_time(ax,
+                         "inc_cancers_fullpop_alltypes", #eligibleunvaccpop  vaccpop fullpop
+                         True,#normalise per 100k
+                         algs_to_plot,
+                         show_quartiles=False,
+                         show_normal_CI=True,
+                         accepted_paramandseeds=accepted_paramseeds
+                         )
+    plt.legend()
+    plt.show()
+
+    """    
+     ['V5U5A5', 'V7U5A5',    'V10U5A5',      'V15U5A5',  'V_U5A5',
+                                                    'V10U7A5',      'V15U7A5',  'V_U7A5', #this is an intermediate stage of algs to consider, with a slightly increased interval for U but nothing crazy
+                                                                    'V15U10A5',             #then this is a later intermediate stage
+                                                                                'V_U15A5',    #this is a late stage with a very large unvacc vacc eligible interval and no screening for vacc
+                                       'V7U7A5',    'V10U10A5',     'V15U15A5', 'V_U_A5',
+                                                    'V10U10A10',    'V15U10A10','V_U10A10',
+                                                                    'V15U15A10','V_U_A10',
+                                                                                'V_U_A_']
+     
+     our simulation, and each quantity may be recorded over a number of subpopulations as well as the population as a whole, as appropriate for the analysis we want to complete.
+    We therefore first define a number of partitions over our population - these are also referred to as 'vacc_state' in the code as they refer to the state of an agent in terms of vaccination:
+        - 'fullpop': the full population of interest (in the model, all women)
+        - 'vaccpop': the full vaccinated population of interest (in the model, all vaccinated women)
+        - 'unvaccpop': the full unvaccinated population of interest (in the model, all unvaccinated women)
+        - 'eligiblepop': the full vaccination-eligible population of interest (in the model, all women offered a vaccine as a teen)
+        - 'ineligiblepop': the full vaccination-ineligible population of interest (in the model, all women not offered a vaccine as a teen)
+        - 'eligibleunvaccpop': the full unvaccinated, vaccine-eligible population of interest (in the model, all women offered a vaccine as a teen that remain unvaccinated)
+    We also record quantities over different genotypes:
+        - 'alltypes': all genotypes
+        - 'vacctypes': only genotypes included in the nonavalent vaccine (e.g. if we are looking at a cancer incidence timeseries restricted to vacctypes, then we are only looking at cancers attributable to genotypes included in the nonavalent vaccine)
+        - 'nonvacctypes': only genotypes not included in the nonavalent vaccine
+    We then record the following quantities for all combinations of population partition and genotypes:
+        -'inc_infectious': incidence of new infectious individuals
+        -'inc_cin': incidence of new individuals with CIN state
+        -'inc_cancers': incidence of new individuals with cancer
+        -'inc_cancers_diagnosed': incidence of new cancer diagnoses (through colposcopy triggered by regular screening only)
+        -'inc_cancer_deaths': incidence of deaths due to cancer
+        -'prev_infectious': prevalence of infectious individuals 
+        -'prev_cin': prevalence of individuals with CIN state
+        -'prev_cancers': prevalence of individuals with cancer 
+        -'prev_cancers_ud5y': prevalence of individuals who currently have a cancer that is undiagnosed and has been continually present for at least the last 5 years
+    Finally, the following quantities are not related to genotypes, so only recorded for each population partition:
+        -'routine_screens': the number of adminsitered routine screening interventions
+        -'popsize': the number of (living) individuals in this population at this timepoint
+    """
