@@ -139,11 +139,11 @@ colors_by_algorithm_stem = {
     'V15U5A5':natureColorScheme['greens'][3],  
     'V_U5A5':natureColorScheme['greens'][4],
                                                     
-    'V10U7A5':natureColorScheme['blues'][2],      
+    'V10U7A5':natureColorScheme['blues'][1],  
     'V15U7A5':natureColorScheme['blues'][3],  
     'V_U7A5':natureColorScheme['reds'][4],
                                                                     
-    'V15U10A5':natureColorScheme['blues'][2],          
+    'V15U10A5':natureColorScheme['blues'][-2],         
     'V_U15A5':natureColorScheme['reds'][-3],   
     
     'V7U7A5':natureColorScheme['yellows'][1],    
@@ -1836,12 +1836,19 @@ def fig3_timeseries(data_name,
                     show_quartiles=True, legend=False,
                     show_vacc_wise = True,
                     show_cohort_wise=True,
-                    show_uniform = True): #not show_quartiles => shows mean with no CI
+                    show_hybrid = True,
+                    show_uniform = True,
+                    show_baseline_mean = False): #not show_quartiles => shows mean with no CI
     #Specify the algorithms being plotted
     algs_to_plot = []
-    algs_to_plot += ['V10U5A5','V15U5A5', 'V_U5A5'] if show_vacc_wise else []
-    algs_to_plot += ['V10U10A5','V15U15A5','V_U_A5'] if show_cohort_wise else []
+    algs_to_plot += ['V7U5A5','V10U5A5','V15U5A5', 'V_U5A5'] if show_vacc_wise else []
+    algs_to_plot += ['V7U7A5', 'V10U10A5','V15U15A5','V_U_A5'] if show_cohort_wise else []
+    algs_to_plot += ['V10U7A5','V15U10A5'] if show_hybrid else []
     algs_to_plot += ['V5U5A5','V10U10A10'] if show_uniform else []
+
+
+
+
     """
     The algorithms above have been chosen to give an overview of the dynamics at play and their impact on the overall population:
     - When considering cancer incidence, we see the most important interval of the three, by far, is the A interval. Even no screening for vaccinated (and hence, any interval for vaccinated), combined with 5 for all others, is not much worse. Cohort-wise screening intervals should not be increased too high, but a little is still OK too. We do see the cuvres get worse in both cases as we increase the V and U parameters - with more sensitivity to U than we have for V
@@ -1863,8 +1870,12 @@ def fig3_timeseries(data_name,
     _ , ax = plt.subplots(1,1)
     if other_data_name is None:
         plot_quant_over_time(ax, data_name, True, algs_to_plot,show_quartiles, accepted_paramandseeds=accepted_paramseeds)
+        if show_baseline_mean:
+            plot_quant_over_time(ax, data_name, True, ['V5U5A5_8_8_68_76_55_55_9_9__96_7_13'], accepted_paramandseeds=accepted_paramseeds)
     else:
         plot_x_per_y(ax, data_name, other_data_name, algs=algs_to_plot, show_quartiles=show_quartiles, accepted_paramandseeds=accepted_paramseeds )
+        if show_baseline_mean:
+            plot_x_per_y(ax, data_name, other_data_name, algs=['V5U5A5_8_8_68_76_55_55_9_9__96_7_13'],accepted_paramandseeds=accepted_paramseeds)
 
     if legend:
         plt.legend()
@@ -1879,46 +1890,43 @@ if __name__=="__main__":
 
     show_quartiles = True #else, shows just the mean
     show_legend = True
-    show_vaccwise = True
-    show_cohortwise = True
-    show_uniform = True
+    show_vaccwise = False
+    show_cohortwise = False
+    show_hybrid = True
+    show_uniform = False
+    show_baseline_mean = True #good to have this on as a comparator when baseline is not in the plot
 
     fig3_timeseries('inc_cancers_fullpop_alltypes', 
                     show_quartiles=show_quartiles,#show quartiles 
                     legend=show_legend, #show legend
                     show_vacc_wise=show_vaccwise, #show vacc wise
                     show_cohort_wise=show_cohortwise, #show cohort wise
+                    show_hybrid=show_hybrid,
                     show_uniform=show_uniform, #shown uniform interval
+                    show_baseline_mean=show_baseline_mean,
                     )
     
-    if not show_quartiles:
-        ax = fig3_timeseries('inc_cancers_diagnosed_fullpop_alltypes',#'routine_screens_fullpop', 
-                        other_data_name='routine_screens_fullpop', #'inc_cancers_diagnosed_fullpop_alltypes',
-                        show_quartiles=show_quartiles,#show quartiles 
-                        legend=show_legend, #show legend
-                        show_vacc_wise=show_vaccwise, #show vacc wise
-                        show_cohort_wise=show_cohortwise, #show cohort wise
-                        show_uniform=show_uniform, #shown uniform interval
-                        )
-        reciprocal = lambda x: 1/x
-        ax.set_yscale('function', functions=(reciprocal, reciprocal)) #NOTE: if I try and directly do routine screens / inc cancers diagnosed with means, the data behaves wierdly with 0s, so somehow this is more stable. gets the same results looking at the plots (but without the odd gaps that appear exactly where the data gets interesting!)
-    else:
-        #I can do the plots directly if showing quartiles
-        fig3_timeseries('routine_screens_fullpop', 
-                        other_data_name='inc_cancers_diagnosed_fullpop_alltypes',
-                        show_quartiles=show_quartiles,#show quartiles 
-                        legend=show_legend, #show legend
-                        show_vacc_wise=show_vaccwise, #show vacc wise
-                        show_cohort_wise=show_cohortwise, #show cohort wise
-                        show_uniform=show_uniform, #shown uniform interval
-                        )
+    ax = fig3_timeseries('inc_cancers_diagnosed_fullpop_alltypes',#'routine_screens_fullpop', 
+                    other_data_name='routine_screens_fullpop', #'inc_cancers_diagnosed_fullpop_alltypes',
+                    show_quartiles=show_quartiles,#show quartiles 
+                    legend=show_legend, #show legend
+                    show_vacc_wise=show_vaccwise, #show vacc wise
+                    show_cohort_wise=show_cohortwise, #show cohort wise
+                    show_hybrid=show_hybrid,
+                    show_uniform=show_uniform, #shown uniform interval
+                    show_baseline_mean=show_baseline_mean,
+                    )
+    reciprocal = lambda x: 1/x
+    ax.set_yscale('function', functions=(reciprocal, reciprocal)) #NOTE: if I try and directly do routine screens / inc cancers diagnosed with means, the data behaves wierdly with 0s, so somehow this is more stable. gets the same results looking at the plots (but without the odd gaps that appear exactly where the data gets interesting!)
         
     fig3_timeseries('prev_cancers_ud5y_fullpop_alltypes', 
                     show_quartiles=show_quartiles,#show quartiles 
                     legend=show_legend, #show legend
                     show_vacc_wise=show_vaccwise, #show vacc wise
                     show_cohort_wise=show_cohortwise, #show cohort wise
+                    show_hybrid=show_hybrid,
                     show_uniform=show_uniform, #shown uniform interval
+                    show_baseline_mean=show_baseline_mean,
                     )
     
     fig3_timeseries('routine_screens_fullpop', 
@@ -1926,7 +1934,9 @@ if __name__=="__main__":
                     legend=show_legend, #show legend
                     show_vacc_wise=show_vaccwise, #show vacc wise
                     show_cohort_wise=show_cohortwise, #show cohort wise
+                    show_hybrid=show_hybrid,
                     show_uniform=show_uniform, #shown uniform interval
+                    show_baseline_mean=show_baseline_mean,
                     )
     #"""
 
