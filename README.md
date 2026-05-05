@@ -34,7 +34,7 @@ This repo allows for direct replication of our modelling results as well as expl
 
 ## Disclaimer
 
-This code allows replication of modelling results from a research project into Cervical Screening in England, using the HPVsim model as developed by the Institute of Disease Modelling (IDM), the Burnet Institute, and other collaborators. Its underlying model is HPVsim 2.2.4, with adaptations to align with modelling needs in England. See https://github.com/StarSimHub/HPVSim for the latest version of the base model. 
+This code allows replication of modelling results from a research project undertaken at the University of Oxford, with collaboration from Institute of Disease Modelling and UKHSA into Cervical Screening in England, using the HPVsim model as developed by the Institute of Disease Modelling (IDM), the Burnet Institute, and other collaborators. Its underlying model is HPVsim 2.2.4, with adaptations to align with modelling needs in England. See https://github.com/StarSimHub/HPVSim for the latest version of the base model. 
 
 
 
