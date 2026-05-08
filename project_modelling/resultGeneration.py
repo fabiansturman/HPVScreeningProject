@@ -1204,14 +1204,14 @@ def plot_quant_over_time(ax,
         ax.plot(xs, middles, color=alg_colors[alg] if alg in alg_colors.keys() else None, label= alg_labels[alg] if alg in alg_labels.keys() else alg) 
     return ax
 
-
 def plot_x_per_y(ax, 
                  data_name_x, data_name_y, 
                  normalise_per_100k = False,
                  algs=None, show_quartiles = False, show_normal_CI = False,
                  alg_colors=algorithm_colors, alg_labels=algorithm_labels,
                  burnin_timesteps=4*20, burnout_timesteps = 4*5, smoothing_kernel=4,
-                 accepted_paramandseeds = None):
+                 accepted_paramandseeds = None,
+                 reciprocate = False):
     """
     Plots the ratio x/y over time (e.g. for plotting number of screens per positive cancer diagnosis). Finds ratio by pairing timeseries on parameterisation and seed.
 
@@ -1234,6 +1234,8 @@ def plot_x_per_y(ax,
     smoothing_kernel: width (in timesteps) of moving average filter over timeseries
     
     accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
+    
+    reciprocate: Do everything x/y in calculations  and then actually plot y/x
     """
     #Deal with parameters (assign defaults and check correctness)
     if algs is None:
@@ -1340,6 +1342,13 @@ def plot_x_per_y(ax,
             middle_timeseries_by_alg[alg] = smooth_list(middle_timeseries_by_alg[alg], smoothing_kernel)
             upper_timeseries_by_alg[alg] = smooth_list(upper_timeseries_by_alg[alg], smoothing_kernel)
 
+    #Recirpocate if needed
+    if reciprocate:
+        for alg in algs:
+            lower_timeseries_by_alg[alg] = 1/np.array(lower_timeseries_by_alg[alg])
+            middle_timeseries_by_alg[alg] = 1/np.array(middle_timeseries_by_alg[alg])
+            upper_timeseries_by_alg[alg] = 1/np.array(upper_timeseries_by_alg[alg])
+
     #Plot
     for alg in algs: #algs has had any elements removed for which we could not successfully load and process data
         T = len(lower_timeseries_by_alg[alg])
@@ -1354,7 +1363,6 @@ def plot_x_per_y(ax,
             ax.plot(xs, uppers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=0.5)
         ax.plot(xs, middles, color=alg_colors[alg] if alg in alg_colors.keys() else None, label= alg_labels[alg] if alg in alg_labels.keys() else alg) 
     return ax
-
 
 def plot_paired_difference_tss(ax,
                                data_name, normalise_per_100k,
@@ -1513,23 +1521,31 @@ def plot_paired_difference_tss(ax,
     else:
         return ax
 
-    
 def plot_sum_barchart(ax, bar_colors, line_colors,
                             data_name, start_tp = 0, end_tp=0, 
                             normalise_per_100k=False, algs=[], 
                      xs=None, width=0.8,
                       hatch=None,
-                      accepted_paramandseeds = None):
+                      accepted_paramandseeds = None,
+                      denominator_data_name = None):
     """
     As get_simple_totals, but then takes the totals and plots them as bars to {ax}. Bar heights are medians and upper and lower quartiles indicated by superimposed error bars.
     Bar positions given by xs, widths by {width}.
     Bar colors given by bar_colors, while colours for any lines on the bars given by line_colors. Hatching pattern given by hatch.
     
     accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
+    denominator_data_name: If specified, each bar is sum(data_name in specified time range)/sum(denominator_data_name in specified time range)
     """
 
     #Get totals
     totals_by_alg = get_simple_totals(data_name, start_tp, end_tp, normalise_per_100k, algs, accepted_paramandseeds)
+
+    #Do dividing iff needed
+    if denominator_data_name is not None:
+        denominator_totals_by_alg = get_simple_totals(denominator_data_name, start_tp, end_tp, normalise_per_100k, algs, accepted_paramandseeds)
+        for alg in algs:
+            for i in range(len(totals_by_alg[alg])):
+                totals_by_alg[alg][i] = totals_by_alg[alg][i] / denominator_totals_by_alg[alg][i] #we can do this as get_simple_totals only deals in arrays and lists (which conserves order) and always iterates through (seed,param) pairs in whatever way a dictionary is to iterate through them. Although that type need not conserve order, we can assume that in the miliseconds between loading the two sums, there is no reimplementarion of this function and can assume the function is udnerlying deterministic (TODO: this is not the best coding practice though, so perhaps should try and order the param_seed paris and then this is all fine)
 
     #Get values to be plotted for each alg (ordered according to ordering defined in {algs})
     LQs = [np.percentile(totals_by_alg[alg], 25) for alg in algs]
@@ -1686,16 +1702,17 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
                 pvalue = ttest_result.pvalue
                 statistic = ttest_result.statistic
 
+                #Output the results for this algorithm pairing, for quoting in the results section
+                print(f"{alg1} X {alg2} => {pvalue}, {statistic}")
+
                 #Color the square if pvalue is significant
                 color='none'
                 greens = mpl.colormaps['Greens'] 
                 reds = mpl.colormaps['Reds']        
                 if pvalue<significance:
-                    #colormap_point = 0.5*np.tanh(-np.log10(pvalue)/150)+0.2 #NOTE: the rate of change of color and max color may need to change to get the best resolution over our p values
+                    #colormap_point = 0.5*np.tanh(-np.log10(pvalue)/150)+0.2 #TODO-act on the following note but kep it there for the future  #NOTE: the rate of change of color and max color may need to change to get the best resolution over our p values
                     logged = -np.log10(pvalue)
-                    #print(logged)
                     colormap_point = max(0.75*np.tanh((logged-70)/30)+0.1, 0.2*np.tanh((logged-2)/8)+0.2, 0.2)
-                    print(colormap_point)
                     if statistic>0:
                         color=greens(colormap_point)
                     else:
@@ -1746,48 +1763,103 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
 
     return axs
 
-def get_elimination_table(alg_stems, cal_case_suffix, csv_filename, 
-                          data_name='inc_cancers_allpop_alltypes', start_tp=240, end_tp=243,
-                          normalise_per_100k=True, target_sum=4,
-                          accepted_paramandseeds = None):
+def get_elimination_table( alg_stems, 
+                                cal_case_suffix, csv_filename, 
+                                data_name='inc_cancers_fullpop_alltypes', 
+                                year_by_tp = lambda x: 1980+x/4,
+                                normalise_per_100k=True, 
+                                target_value=1,
+                                accepted_paramandseeds = None,
+                                tps_of_interest = [241, 281],
+                                smoothing_kernel=4
+                                ):
     """
     Saves a csv that forms a table of values relevant to cervical cancer elimination under different algorithms and vaccination levels.
 
     alg_stems: set of screening algorithm stems (format 'V{}U{}A{}') to collect results over
     cal_case_suffix: to be added to the end of the stems (after the alg stem and the vacc level)
-    csv_fileaname: name of the file to which to save the generated results
+    csv_filename: name of the file to which to save the generated results
     data_name: the quantity to compute sums of for each algorithm (changeable to focus, for example, on just unvaccinated subpopulation)
-    start_tp: inclusive lower bound for the sum (defaults to start of 2040 for a simulation starting at 1980 for a sim with dt=0.25)
-    end_tp: inclusive upper bound for the sum (defaults to end of 2040 (i.e. 2040.75) for a simulation starting at 1980 for a sim with dt=0.25)
+    year_by_tp: a map (function) that takes a timepoint and turns it to a year (e.g. lets us save 'elimination by timepoint 244' as 'elimination by 2041')
     normalise_per_100k: whether all values should be normalised per 100k before adding up
-    target_sum: the value which we want the sums to be strictly less than. If all sums for a particular alg at a particular vacc level are strictly below {target_sum}, then we write down an empirical probability of 1 of reaching the target sum level
+    target_value: the value which we want our timeseries to be strictly less than in order to achieve elimination. Note that this changes with the dt of our timeseries; in our modelling we have dt=4, and therefore a cancer incidence rate of 4/100k becomes a value of 1/100k each timepoint (assuming uniform distribution of annual incidence by quarter, which is the case in our modelling)
     accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
+    tps_of_interest ([int]): list of timepoints for which we want special coloumns in our table which report 'elimination prob by this timepoint'
+    smoothing_kernel (int): width (in timepoints) of moving-average smoothing applied to timeseries (after normalising but before any other processing)
 
     Saves a csv file with one row for each algorithm, and one column-bunch for each vacc_level. ]
-    Each column bunch contains columns for (LQ, Median, UQ) data_name sum between timepoints, and then the proportion of alg runs for that vacc level that got a sum under the target_sum
+    Each column bunch contains columns for (LQ, Median, UQ) for the year in which we reach elimination, and the elimination prob by 2040 and 2050
     """
     tabular_data = []
 
     #Add column headings
     row = ['alg']
     for vacc_level in ['_6','_8','_9']:
-        row.append(f"LQ ({vacc_level})")
-        row.append(f"Median ({vacc_level})")
-        row.append(f"UQ ({vacc_level})")
-        row.append(f"P(less than target {target_sum}) ({vacc_level})")
+        row.append(f"Elimination Year: Median [LQ, UQ] ({vacc_level})")
+        for tp in tps_of_interest:
+            row.append(f"{year_by_tp(tp)} Elimination Probability ({vacc_level})")
     tabular_data.append(row)
-    
+
+    #Determine the population of interest, given the quantity we are looking at ({data_name})
+    pop = get_relevant_pop_name(data_name) 
+
     #Populate rest of rows of table
     for alg_stem in tqdm(alg_stems):
-        row=[alg_stem] #starting off row with the row heading
-        for vacc_level in ['_6','_8','_9']:
+        row=[alg_stem] #starting off row with the row heading (the name of the algorithm)
+        for vacc_level in ['_6', '_8', '_9']:
             alg = f'{alg_stem}{vacc_level}{cal_case_suffix}'
-            totals = get_simple_totals(data_name, start_tp, end_tp, normalise_per_100k, algs=[alg], accepted_paramandseeds=accepted_paramandseeds)
-            totals=np.array(totals[alg]) #extract this alg's data (the only data that was there), and convert to numpy array as this is needed for the following processing
-            row.append("{:.2f}".format( np.percentile(totals, 25) ))
-            row.append("{:.2f}".format( np.percentile(totals, 50) ))
-            row.append("{:.2f}".format( np.percentile(totals, 75) ))
-            row.append("{:.3f}".format( np.count_nonzero(totals<target_sum) / len(totals) ))
+
+            #Load timeseries
+            with open(f"project_modelling/pickled_results/{alg}.pickle", "rb") as f:
+                loaded_data = pickle.load(f)
+                alg_timeseriess = loaded_data[data_name] #alg_timeseries = {(seed, parametersation):[timeseries]}
+                pop_timeseriess = loaded_data[pop]
+
+            #Filter for the simulation runs we have accepted for analysis
+            if accepted_paramandseeds is None:
+                accepted_paramandseeds = set(alg_timeseriess.keys())
+            else:
+                accepted_paramandseeds = accepted_paramandseeds.intersection(set(alg_timeseriess.keys()))
+
+            #Iterate through the simulations and accumulate results
+            elimination_tps = [] #will contain the timepoint of elimination for each of the timeseries
+            elim_counts = {tp: 0 for tp in tps_of_interest} #elim_counts[tp]="number of simulations which had elimination by timepoint tp"
+            
+            for key in accepted_paramandseeds:
+                data = alg_timeseriess[key]
+                data = np.array(data)
+
+                #Normalise if needed
+                if normalise_per_100k:
+                    popsize = pop_timeseriess[key]
+                    popsize = np.array(popsize)
+                    data = np.divide(data, popsize) * 100_000
+
+                #Smooth appropriately
+                data = np.array(smooth_list(data, smoothing_kernel))
+                
+                #Determine timepoint at which we first are at elimination
+                is_eliminated = (data <= target_value)
+                elimination_start = np.where(~is_eliminated)[0][-1] + 1 #this finds the index of the last 'False' and then adds 1. elimijnation_start>=len(is_eliminated) => elimination never reached
+
+                #Update accumulator variables
+                elimination_tps.append(elimination_start)
+                for tp in tps_of_interest:
+                    if tp>=elimination_start:
+                        elim_counts[tp] += 1
+            
+            #Calculate values to be added to this row in the csv file
+            LQ_elimination_year = year_by_tp(np.percentile(elimination_tps, 25))
+            median_elimination_year = year_by_tp(np.percentile(elimination_tps, 50))
+            UQ_elimination_year = year_by_tp(np.percentile(elimination_tps, 75))
+            elim_proportions = {}
+            for tp in tps_of_interest:
+                elim_proportions[tp] = elim_counts[tp] / len(accepted_paramandseeds)
+
+            #Add the relevant values to the csv file
+            row.append("{:.0f}".format(median_elimination_year) + " [" + "{:.0f}".format(LQ_elimination_year) + ", " + "{:.0f}".format(UQ_elimination_year) + "]")
+            for tp in tps_of_interest:
+                row.append("{:.3f}".format(elim_proportions[tp]))
         tabular_data.append(row)
 
     #Save table to csv
@@ -1831,14 +1903,15 @@ def ttest_powerplot(ax, lower_std_bound, upper_std_bound, effect_size_lower=-4, 
 
 
 ###- (7) Specifically generating the plots as in the paper -###
-def fig3_timeseries(data_name, 
+def fig3_timeseries_helper(data_name, 
                     other_data_name=None, #if other_data_name is specified, we will not plot data_name per 100k,but instead the ratio between dataname and other
                     show_quartiles=True, legend=False,
                     show_vacc_wise = True,
                     show_cohort_wise=True,
                     show_hybrid = True,
                     show_uniform = True,
-                    show_baseline_mean = False): #not show_quartiles => shows mean with no CI
+                    show_baseline_mean = False
+                    ): #not show_quartiles => shows mean with no CI
     #Specify the algorithms being plotted
     algs_to_plot = []
     algs_to_plot += ['V7U5A5','V10U5A5','V15U5A5', 'V_U5A5'] if show_vacc_wise else []
@@ -1847,11 +1920,8 @@ def fig3_timeseries(data_name,
     algs_to_plot += ['V5U5A5','V10U10A10'] if show_uniform else []
 
 
-
-
     """
-    The algorithms above have been chosen to give an overview of the dynamics at play and their impact on the overall population:
-    - When considering cancer incidence, we see the most important interval of the three, by far, is the A interval. Even no screening for vaccinated (and hence, any interval for vaccinated), combined with 5 for all others, is not much worse. Cohort-wise screening intervals should not be increased too high, but a little is still OK too. We do see the cuvres get worse in both cases as we increase the V and U parameters - with more sensitivity to U than we have for V
+    The algorithms above have been chosen to give an overview of the dynamics at play and their impact on the overall population
     """
     for i in range(len(algs_to_plot)):
         algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
@@ -1867,36 +1937,41 @@ def fig3_timeseries(data_name,
     print(f"{len(accepted_paramseeds)} accepted, {num_rejected} rejected")
 
     #Plot
-    _ , ax = plt.subplots(1,1)
+    _ , ax = plt.subplots(1,1, figsize=(7, 5))
     if other_data_name is None:
         plot_quant_over_time(ax, data_name, True, algs_to_plot,show_quartiles, accepted_paramandseeds=accepted_paramseeds)
         if show_baseline_mean:
             plot_quant_over_time(ax, data_name, True, ['V5U5A5_8_8_68_76_55_55_9_9__96_7_13'], accepted_paramandseeds=accepted_paramseeds)
     else:
-        plot_x_per_y(ax, data_name, other_data_name, algs=algs_to_plot, show_quartiles=show_quartiles, accepted_paramandseeds=accepted_paramseeds )
+        plot_x_per_y(ax, data_name, other_data_name, algs=algs_to_plot, show_quartiles=show_quartiles, accepted_paramandseeds=accepted_paramseeds , smoothing_kernel=12, reciprocate=True)  #a bigger kernel here as we get more noise doing a ratio, just smooths things a little
         if show_baseline_mean:
-            plot_x_per_y(ax, data_name, other_data_name, algs=['V5U5A5_8_8_68_76_55_55_9_9__96_7_13'],accepted_paramandseeds=accepted_paramseeds)
+            plot_x_per_y(ax, data_name, other_data_name, algs=['V5U5A5_8_8_68_76_55_55_9_9__96_7_13'],accepted_paramandseeds=accepted_paramseeds, smoothing_kernel=12, reciprocate=True)
 
     if legend:
         plt.legend()
+
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
     return ax
 
 
 
-
 if __name__=="__main__":
-    #"""
-    #Uncomment this to get the plots for Figure 3
+    """
+    #Uncomment this to get the timeseries plots for Figure 3
 
     show_quartiles = True #else, shows just the mean
-    show_legend = True
+    show_legend = False
     show_vaccwise = False
     show_cohortwise = False
     show_hybrid = True
     show_uniform = False
     show_baseline_mean = True #good to have this on as a comparator when baseline is not in the plot
 
-    fig3_timeseries('inc_cancers_fullpop_alltypes', 
+    ax = fig3_timeseries_helper('inc_cancers_fullpop_alltypes', 
                     show_quartiles=show_quartiles,#show quartiles 
                     legend=show_legend, #show legend
                     show_vacc_wise=show_vaccwise, #show vacc wise
@@ -1905,45 +1980,326 @@ if __name__=="__main__":
                     show_uniform=show_uniform, #shown uniform interval
                     show_baseline_mean=show_baseline_mean,
                     )
+    ax.set_ylim((0,3))
+    ax.set_yticks([0,0.5,1,1.5,2,2.5,3],[0,2,4,6,8,10,12]) #needs rescaling of y axis as these incidence numbers are just per 3 month interval, but we want to be reading the annual incidence rate at each timepoint
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+
+    ax = fig3_timeseries_helper('inc_cancers_diagnosed_fullpop_alltypes', #the reciprocal o this ratio is taken in the fig3_timeseries function to get the quantity we want
+                    other_data_name='routine_screens_fullpop', 
+                    show_quartiles=show_quartiles,#show quartiles 
+                    legend=show_legend, #show legend
+                    show_vacc_wise=show_vaccwise, #show vacc wise
+                    show_cohort_wise=show_cohortwise, #show cohort wise
+                    show_hybrid=show_hybrid,
+                    show_uniform=show_uniform, #shown uniform interval
+                    show_baseline_mean=show_baseline_mean,
+                    )
+    ax.set_ylim((0,17_000)) 
+    ax.set_yticks([0,2_500,5_000,7_500,10_000,12_500,15_000], [0,10_000,20_000,30_000,40_000,50_000,60_000])
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+
+    ax = fig3_timeseries_helper('prev_cancers_ud5y_fullpop_alltypes', 
+                    show_quartiles=show_quartiles,#show quartiles 
+                    legend=show_legend, #show legend
+                    show_vacc_wise=show_vaccwise, #show vacc wise
+                    show_cohort_wise=show_cohortwise, #show cohort wise
+                    show_hybrid=show_hybrid,
+                    show_uniform=show_uniform, #shown uniform interval
+                    show_baseline_mean=show_baseline_mean,
+                    )
+    ax.set_ylim((0,14)) #this does not need rescaling as although resolution is 3-monthly, we are just recording prevalence so thats fine
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+
+    ax = fig3_timeseries_helper('routine_screens_fullpop', 
+                    show_quartiles=show_quartiles,#show quartiles 
+                    legend=show_legend, #show legend
+                    show_vacc_wise=show_vaccwise, #show vacc wise
+                    show_cohort_wise=show_cohortwise, #show cohort wise
+                    show_hybrid=show_hybrid,
+                    show_uniform=show_uniform, #shown uniform interval
+                    show_baseline_mean=show_baseline_mean,
+                    )
+    ax.set_ylim((0,3_000))
+    ax.set_yticks([0,500,1000,1500,2000,2500,3000], [0,2000,4000,6000,8000,10000,12000]) #this needs rescaling so that each point goes from a 'per 3 months' rate to an annual rate
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+
+    plt.show()
+    """
+
+    """
+    #Uncomment this to get the barchart plot at the bottom of Figure 3
+    algs_to_plot = [ 'V5U5A5','V10U10A10','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5']
+    for i in range(len(algs_to_plot)):
+        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
     
-    ax = fig3_timeseries('inc_cancers_diagnosed_fullpop_alltypes',#'routine_screens_fullpop', 
-                    other_data_name='routine_screens_fullpop', #'inc_cancers_diagnosed_fullpop_alltypes',
-                    show_quartiles=show_quartiles,#show quartiles 
-                    legend=show_legend, #show legend
-                    show_vacc_wise=show_vaccwise, #show vacc wise
-                    show_cohort_wise=show_cohortwise, #show cohort wise
-                    show_hybrid=show_hybrid,
-                    show_uniform=show_uniform, #shown uniform interval
-                    show_baseline_mean=show_baseline_mean,
-                    )
-    reciprocal = lambda x: 1/x
-    ax.set_yscale('function', functions=(reciprocal, reciprocal)) #NOTE: if I try and directly do routine screens / inc cancers diagnosed with means, the data behaves wierdly with 0s, so somehow this is more stable. gets the same results looking at the plots (but without the odd gaps that appear exactly where the data gets interesting!)
-        
-    fig3_timeseries('prev_cancers_ud5y_fullpop_alltypes', 
-                    show_quartiles=show_quartiles,#show quartiles 
-                    legend=show_legend, #show legend
-                    show_vacc_wise=show_vaccwise, #show vacc wise
-                    show_cohort_wise=show_cohortwise, #show cohort wise
-                    show_hybrid=show_hybrid,
-                    show_uniform=show_uniform, #shown uniform interval
-                    show_baseline_mean=show_baseline_mean,
-                    )
+    accepted_paramseeds, num_rejected = get_history_matches_paramseeds(algs_to_plot[0],
+                                   'inc_cancers_fullpop_alltypes',
+                                   cancer_incidence_history,
+                                   0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                   )
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_sum_barchart(ax, 
+                      bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
+                      data_name='inc_cancers_fullpop_alltypes',
+                      #start_tp=200, end_tp=280, #this gets sum 2030-2050
+                      #start_tp=280, end_tp=283, #this gets sum in the year 2050
+                      start_tp=240, end_tp=243, # this gets sum in the year 2040
+                      normalise_per_100k=False,
+                      algs=algs_to_plot,
+                      accepted_paramandseeds=accepted_paramseeds,
+                      )
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('inc cancers')
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_sum_barchart(ax, 
+                      bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
+                      data_name='routine_screens_fullpop',
+                      #start_tp=200, end_tp=280, #this gets sum 2030-2050
+                      #start_tp=280, end_tp=283, #this gets sum in the year 2050
+                      start_tp=240, end_tp=243, # this gets sum in the year 2040
+                      normalise_per_100k=False,
+                      algs=algs_to_plot,
+                      accepted_paramandseeds=accepted_paramseeds,
+                      )
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('screens')
     
-    fig3_timeseries('routine_screens_fullpop', 
-                    show_quartiles=show_quartiles,#show quartiles 
-                    legend=show_legend, #show legend
-                    show_vacc_wise=show_vaccwise, #show vacc wise
-                    show_cohort_wise=show_cohortwise, #show cohort wise
-                    show_hybrid=show_hybrid,
-                    show_uniform=show_uniform, #shown uniform interval
-                    show_baseline_mean=show_baseline_mean,
-                    )
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_sum_barchart(ax, 
+                      bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
+                      data_name='prev_cancers_ud5y_fullpop_alltypes',
+                      #start_tp=200, end_tp=280, #this gets sum 2030-2050
+                      #start_tp=280, end_tp=283, #this gets sum in the year 2050
+                      start_tp=240, end_tp=243, # this gets sum in the year 2040
+                      normalise_per_100k=False,
+                      algs=algs_to_plot,
+                      accepted_paramandseeds=accepted_paramseeds,
+                      )
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('ud5y')
+    
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_sum_barchart(ax, 
+                      bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
+                      data_name='routine_screens_fullpop',
+                      #start_tp=200, end_tp=280, #this gets sum 2030-2050
+                      #start_tp=280, end_tp=283, #this gets sum in the year 2050
+                      start_tp=240, end_tp=243, # this gets sum in the year 2040
+                      normalise_per_100k=False,
+                      algs=algs_to_plot,
+                      accepted_paramandseeds=accepted_paramseeds,
+                      denominator_data_name='inc_cancers_diagnosed_fullpop_alltypes',
+                      )
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('screens/diag')
+
+    plt.show()
+   """
+
+
+    """
+    #Uncomment this block to get the alg comparison grids (from which we do our t-tests and determine clusters of similar algorithms in a quantitative way)
+    algs_to_plot = ['V5U5A5','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
+    for i in range(len(algs_to_plot)):
+        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
+
+    accepted_paramseeds, _ = get_history_matches_paramseeds(algs_to_plot[0],
+                                   'inc_cancers_fullpop_alltypes',
+                                   cancer_incidence_history,
+                                   0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                   )
+    
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'inc_cancers_ineligiblepop_alltypes',#'inc_cancers_fullpop_alltypes',
+                           #  start_tp=200, end_tp = 280, #corresponds to sum 2030-2050
+                            # start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
+                             start_tp=280,end_tp=283, #this gets the sum over the year 2050
+                             accepted_paramandseeds=accepted_paramseeds)
+    
+    plt.show()
+    """
+
+    """
+    #Uncomment this block to get the elimination tables generated and saved to csvs
+    algs_to_plot = ['V5U5A5','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
+    
+    accepted_paramseeds, _ = get_history_matches_paramseeds('V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                                'inc_cancers_fullpop_alltypes',
+                                cancer_incidence_history,
+                                0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                )
+    
+    get_elimination_table(alg_stems=algs_to_plot,
+                          data_name='inc_cancers_ineligiblepop_alltypes', 
+                               cal_case_suffix='_8_68_76_55_55_9_9__96_7_13',
+                               csv_filename='project_modelling/tabular_results/elimination_results_basecase_ineligiblepop_alltypes.csv',
+                               accepted_paramandseeds=accepted_paramseeds
+                               )
+    """
+
     #"""
+    #Uncomment this to get the equity timeseries plots
+    algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
+    for i in range(len(algs_to_plot)):
+        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
 
-    
+    accepted_paramseeds, _ = get_history_matches_paramseeds(algs_to_plot[0],
+                                   'inc_cancers_fullpop_alltypes',
+                                   cancer_incidence_history,
+                                   0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                   )
 
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'routine_screens_vaccpop', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,4_200))
+    #ax.set_yticks([0,0.25,0.5,0.75,1,1.25,1.5],[0,1,2,3,4,5,6]) #needs rescaling of y axis as these incidence numbers are just per 3 month interval, but we want to be reading the annual incidence rate at each timepoint
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('vaccpop routine screens')
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'routine_screens_eligibleunvaccpop', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,4_200))
+    #ax.set_yticks([0,0.25,0.5,0.75,1,1.25,1.5],[0,1,2,3,4,5,6]) #needs rescaling of y axis as these incidence numbers are just per 3 month interval, but we want to be reading the annual incidence rate at each timepoint
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('eligible unvaccpop routine screens')
+
+    plt.show()
+
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'prev_cancers_ud5y_vaccpop_vacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,1.5))
+    ax.set_yticks([0,0.25,0.5,0.75,1,1.25,1.5],[0,1,2,3,4,5,6]) #needs rescaling of y axis as these incidence numbers are just per 3 month interval, but we want to be reading the annual incidence rate at each timepoint
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('ud5y: vacc, vacctypes')
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'prev_cancers_ud5y_vaccpop_nonvacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,1.5))
+    ax.set_yticks([0,0.25,0.5,0.75,1,1.25,1.5],[0,1,2,3,4,5,6]) #needs rescaling of y axis as these incidence numbers are just per 3 month interval, but we want to be reading the annual incidence rate at each timepoint
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('ud5y: vacc, nonvacctypes')
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'prev_cancers_ud5y_eligibleunvaccpop_vacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,8*1.5))
+    ax.set_yticks(8*np.array([0,0.25,0.5,0.75,1,1.25,1.5]),8*4*np.array([0,0.25,0.5,0.75,1,1.25,1.5])) 
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('ud5y: eligible unvacc, vacctypes')
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'prev_cancers_ud5y_eligibleunvaccpop_nonvacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,1.5))
+    ax.set_yticks([0,0.25,0.5,0.75,1,1.25,1.5],[0,1,2,3,4,5,6]) #needs rescaling of y axis as these incidence numbers are just per 3 month interval, but we want to be reading the annual incidence rate at each timepoint
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('ud5y: eligible unvacc, nonvacctypes')
+
+
+
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_vaccpop_vacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,0.25))
+    ax.set_yticks(0.25*np.array([0,0.2,0.4,0.6,0.8,1]),np.array([0,0.2,0.4,0.6,0.8,1])) 
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('incidence: vacc, vacctypes')
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_vaccpop_nonvacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,0.25))
+    ax.set_yticks(0.25*np.array([0,0.2,0.4,0.6,0.8,1]),np.array([0,0.2,0.4,0.6,0.8,1])) 
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('incidence: vacc, nonvacctypes')
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_eligibleunvaccpop_vacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,3.5))
+    ax.set_yticks(2*np.array([0,0.25,0.5,0.75,1,1.25,1.5]),8*np.array([0,0.25,0.5,0.75,1,1.25,1.5])) 
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('incidence: eligible unvacc, vacctypes')
+
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_eligibleunvaccpop_nonvacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,0.25))
+    ax.set_yticks(0.25*np.array([0,0.2,0.4,0.6,0.8,1]),np.array([0,0.2,0.4,0.6,0.8,1])) 
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_ylabel('incidence: eligible unvacc, nonvacctypes')
 
 
     plt.show()
+    #"""
+
+
+    
+
+
+
+    
 
     
