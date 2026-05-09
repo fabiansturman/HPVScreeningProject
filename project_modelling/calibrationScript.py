@@ -78,7 +78,7 @@ if __name__=="__main__":
     -> Apr27_2__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr30_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
     ->  May1_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
-        => **  ** 
+        => ** summarised into FinalPooledCalibration_65_68_76_55_55_9_9__96_7_13.pickle ** 
         
     ->  May3_1__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     ->  May5_1__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
