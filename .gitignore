@@ -4,3 +4,4 @@ tmp_*
 *.pyc
 /hpvsim/data/__pycache__
 /project_modelling/InterventionAlgorithms/__pycache__
+*.pyc
