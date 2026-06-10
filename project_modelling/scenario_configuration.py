@@ -13,7 +13,7 @@ screening_algorithm = screeningAlgorithms.get_interventions(v=0,u=0,a=0)
 """                                                         ^
                                                             v = screening interval for vaccinated individuals
                                                             u = screening interval for unvaccinated vaccine-elgiible individuals
-                                                            a = screening interval for non-vaccine-eligible individuals
+                                                            a = screening interval for non-vaccine-eligible individuals                                                                                                                       
 """
 
 
@@ -76,6 +76,5 @@ adapted_pars['interventions'] =  screening_algorithm + vaccination_algorithm
 cal_filename = f"project_modelling/calibration_results/FinalPooledCalibration{calibration_code}.pickle"
 
 
-
-        
-        
+if __name__=='__main__':
+    print(cal_filename)

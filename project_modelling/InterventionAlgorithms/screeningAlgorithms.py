@@ -93,7 +93,9 @@ update_needs_consec_screening_3.label="update_needs_consec_screening_3"
 
 def routine_screen_eligible_under50(sim,
                                     v, u, a,
-                                    switch_year):
+                                    switch_year, 
+                                    shorter_interval = 30000000 
+                                    ):
     '''
     Returns a Boolean np.array length {n}(:= number of agents at current time, {sim.t}). ith entry is True iff individual with pid==i is screen-eligible
     The screening intervention for under-50s is different to the screening intervention for over-50s (to allow for different uptake probabilities); this is only for eligibilitg for under-50 screenings.
@@ -119,13 +121,12 @@ def routine_screen_eligible_under50(sim,
                 pass
             else:
                 #If individual has been screened before, at this point in the decision tree, the individual is ineligible for screening iff they have not yet reached their due-date for screening
-                screen_interval = 3 if last_hpv_result==1 else 5
+                screen_interval = shorter_interval if last_hpv_result==1 else 5
                 if sim.t<date_screened+screen_interval/sim['dt']:
                     eligible[pid]=False 
         else:
-            #We are varying screening eligibility according to vaccination-state
-
-            #determine the partition this individual falls into, in terms of screening interval
+            #We are varying screening eligibility according to vaccination-state and/or cohort membership:
+            #so, determine the partition this individual falls into, in terms of screening interval
             screen_interval = None
             if vaccinated:
                 screen_interval = v
@@ -141,13 +142,13 @@ def routine_screen_eligible_under50(sim,
             if screen_interval == 0:
                 if last_hpv_result==1:
                     #if last HPV DNA test result was positive, then due a followup after 3 years even though otherwise they would be not be eligible for any screenings 
-                    if sim.t<date_screened+3/sim['dt']:
+                    if sim.t<date_screened+shorter_interval/sim['dt']:
                         eligible[pid]=False 
                 else:
                     eligible[pid]=False
             else:
                 #override screen interval to be 3 years iff last HPV DNA test was +ve
-                screen_interval = min(3,screen_interval) if last_hpv_result==1 else screen_interval
+                screen_interval = min(shorter_interval,screen_interval) if last_hpv_result==1 else screen_interval
 
                 #at this point in the decision tree, only individuals who have been screened before and are not yet due their routine follow-up remain ineligible
                 if (not np.isnan(sim.people.date_screened[pid])) and  sim.t<date_screened+screen_interval/sim['dt']:
@@ -186,8 +187,7 @@ def routine_screen_eligible_50andover(sim,
                 if sim.t<date_screened+screen_interval/sim['dt']:
                     eligible[pid]=False 
         else:
-            #We are varying screening eligibility according to vaccination-state
-
+            #We are varying screening eligibility according to vaccination-state and/or cohort membership:
             #determine the partition this individual falls into, in terms of screening interval
             screen_interval = None
             if vaccinated:

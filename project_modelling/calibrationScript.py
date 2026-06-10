@@ -74,11 +74,12 @@ if __name__=="__main__":
     -> Apr26_2__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on BMRC, copied to MB) as above
     -> Apr27_1__8_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on MB) as above
         => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9__96_7_13.pickle ** 
-
+        
     -> Apr27_2__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis on cancer treatment effectiveness (trying 65% rather than 80%) (otherwise, it is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr30_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
     ->  May1_1__65_68_76_55_55_9_9__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
         => ** summarised into FinalPooledCalibration_65_68_76_55_55_9_9__96_7_13.pickle ** 
+                    (results made for 80%)
         
     ->  May3_1__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis that is a lower bound on Screening Algorothm Compliance (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     ->  May5_1__8_68_76_36_36_8_8__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
@@ -89,21 +90,27 @@ if __name__=="__main__":
     -> Apr25_2__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on MB) as above
     -> Apr25_3__8_8_8_68_68_95_95__96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above
         => ** summarised into FinalPooledCalibration_8_8_8_68_68_95_95__96_7_13.pickle**
+                    (results made for 80%)
+
 
     -> Apr22_3__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis considering ohr rel imm of 0.1. (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr23_1__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on XPS, copied to MB) as above     
     -> Apr23_3__8_68_76_55_55_9_9_1_96_7_13 : COMPLETE this is a cal (on MB) as above
         => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9_1_96_7_13.pickle **
+                    (seems to be missing one set of results for 80%)
 
     -> Apr21_1__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on XPS, copied to MB) doing a Sensitivity Analysis on Initial HPV Prevalence among Men, seeing what will happen if we make it drop off with age like we do for women (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr21_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on BMRC, copied to MB) as above
     -> Apr22_2__8_68_76_55_55_9_9__96_7_62 : COMPLETE this is a cal (on MB) as above
         => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9__96_7_62.pickle **
+                    (results made for 80%)
     
     -> Apr23_4__8_68_76_55_55_9_9__9_85_13 : COMPELTE this is a cal (on BMRC, copied to MB) doing a Sensitivity Analysis on Cytology Parameterisation (otherwise is identical to the setup in Apr26_1__8_68_76_55_55_9_9__96_7_13)
     -> Apr24_1__8_68_76_55_55_9_9__9_85_13 : COMPLETE this is a cal (on MB) as above
     -> Apr25_1__8_68_76_55_55_9_9__9_85_13 : COMPELTE this is a cal (on BMRC, copied to MB) as above
         => ** summarised into FinalPooledCalibration_8_68_76_55_55_9_9__9_85_13.pickle **
+                    (seems to be missing one set of results for 80%)
+
 
 
     TODO: -> complete all remaining senstiivty analysis calibrations 

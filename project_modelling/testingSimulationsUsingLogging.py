@@ -14,12 +14,12 @@ import hpvsim as hpv
 
 import matplotlib.pyplot as plt
 
-from InterventionAlgorithms.simulationLogging import *
+from InterventionAlgorithms import screeningAlgorithms, NHS_Vacc
+from InterventionAlgorithms.simulationLogging import makeLoggingIntervention, plot_sankey_soft_filter, filter_intervention_by_cancerous, filter_intervention_by_cin, filter_intervention_by_partition, filter_intervention_by_vacc, soft_filter_by_time
 
 
 if __name__=="__main__":
     from basePars import base_pars
-    from InterventionAlgorithms import NHS_2025_lambdamu, NHS_Vacc , GlobalScreeningParameters, NHS_2025_lambdamuForVaccCohortsOnly
 
     start = 1980
     end= 2100#2055 
@@ -31,11 +31,10 @@ if __name__=="__main__":
     base_pars['rand_seed'] = 1
     base_pars['start'] = start
     base_pars['end'] = end
-    base_pars['n_agents']= 10_000#200_000
-    base_pars['interventions'] = NHS_2025_lambdamu.get_interventions(l=1, m=1) + [logger]
-    #base_pars['interventions'] = NHS_2025_lambdamu.get_interventions(l=1, m=1) + NHS_Vacc.vaccinations + [logger]
+    base_pars['n_agents']= 200_000
+    base_pars['interventions'] = screeningAlgorithms.get_interventions(v=5,u=5,a=5) + [logger]
+    #base_pars['interventions'] = screeningAlgorithms.get_interventions(v=5,u=5,a=5) + NHS_Vacc.vaccinations + [logger]
  #   base_pars['interventions'] = NHS_Vacc.vaccinations + [logger]
-   # base_pars['interventions'] = NHS_2025_lambdamuForVaccCohortsOnly.get_interventions(l=1, m=1) + NHS_Vacc.vaccinations + [logger]
 
     sim = hpv.Sim(base_pars) 
     sim.run()

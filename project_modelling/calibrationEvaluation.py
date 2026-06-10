@@ -30,11 +30,11 @@ from scenario_configuration import cal_filename  #import the name of this calibr
 print(cal_filename)
 
 #Whether to plot for start years (2012-2018 + 2011 cancerous genotype data) or end years (2019-2022)
-plot_start = True 
+plot_start = False 
 
 
 #Name for the dummy calibration
-cal_name = "project_modelling/calibration_results/dummy_28Apr26_1"
+cal_name = "project_modelling/calibration_results/dummy_10June26_1"
 
 #Simulation start and end dates
 start = 1980
@@ -162,11 +162,12 @@ if __name__=="__main__":
                 gof = hpv.misc.compute_gof(cancerous_genotype_dist_TRUEDATA, [a,b,c,d])
                 this_gof_cancerous_genotypes_normalised = gof.sum()/4
                 tmp_total_mismatch += this_gof_cancerous_genotypes_normalised*4
-                print(f'This tmp_total_mismatch = {tmp_total_mismatch}')
+                print(f'This tmp_total_mismatch = {tmp_total_mismatch}, normalised cancers GOF = {this_gof_cancers_normalised}, genotype GOF = {this_gof_cancerous_genotypes_normalised}')
                 gofs_cancerous_genotypes_normalised.append(this_gof_cancerous_genotypes_normalised)
 
                 total_gofs_normalised.append(this_gof_cancers_normalised+this_gof_cancerous_genotypes_normalised)
             else:
+                print(f'This tmp_total_mismatch = {tmp_total_mismatch}, normalised cancers GOF = {this_gof_cancers_normalised}')
                 total_gofs_normalised.append(this_gof_cancers_normalised)
         
     all_cancer_results = np.array(all_cancer_results) #Converts cancer analyser results to array shape (n_runs, n_timepoints) (n_runs=len(param_list)*repeat_runs)

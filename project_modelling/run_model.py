@@ -3,7 +3,7 @@ import pickle
 from resultGeneration import initialise_blank_ts_file, run_sim_and_save_raw_result
 import scenario_configuration as scenario_configuration
 
-#import time
+import time
 
 #Load in properties of this round of result-generation from scenario_parameterisation.py
 seeds = scenario_configuration.seeds
@@ -25,7 +25,7 @@ if __name__=="__main__":
     initialise_blank_ts_file(algs = [alg_name])
 
     #print("sleeping before getting started, to avoid RAM overload :)")
-    #time.sleep(1.75*3*60*60)
+    #time.sleep( 1.75*60*60 * 5.5 )
     #print("now getting started!")
 
     #Generate the raw results

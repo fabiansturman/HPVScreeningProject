@@ -769,6 +769,267 @@ def run_sim_and_get_infection_histogram(seed:int,
         
     return all_prevalence_logs
 
+def get_infections_curves( seed:int, 
+                                    final_cal_data=None, par_labels=None,
+                                    genotypes = [True, True, True, True],
+                                    sex = [True, False],
+                                    percentage = True,
+                                    #inc_vacc = True, inc_unvacc_vacc_elig = True, inc_vacc_inelig = True
+                                    vacc_only = False, unvacc_vacc_elig_only = False, vacc_inelig_only =False
+                                    ):
+    """ 
+    Runs a single HPVsim simulation with {base_pars} and RNG seed {seed}, over each parameterisation defined in {(final_cal_data, par_labels)} for standard interventions (NHS 2025 screening and all vaccination) between 1980 and 2025. 
+    Records HPV infection prevalence over the population defined in the parameters (inc_vacc, inv_unvacc_vacc_elig, and inc_vacc_inelig toggle the population over including any number of 3 possible partitions).
+    Returns HPV infection prevalence over time, alongside detected HPV infection prevalence for 5,7,10, and 15-yearly screening over the full population (but  as we only record for the specified subpopulation, it is equivalent to focussing in on that subpopulation; noting that infections do not change substantially if at all as screening algorithms change, so whether we screen a certain frequency for everyone or just the subpopulation we are recording doesnt make a difference)
+
+    Infection prevalence for a given genotype is defined as the percentage of people with the INFECTIOUS state for that genotype, to be consistent with what testing could pick up in the real world (as this function is to be used for validation against real-world data).
+
+    seed: RNG seed for simulation
+    final_cal_data: a list of parameter tuples [(v11,v12,...,v1p),...,(vn1,vn2,...,vnp)] where there are p calibrated parameters and n parameterisations. If None, loads in defaults locally.
+    par_labels: the internal HPVsim name for each of the p calibrated parameters, corresponding to the tuple orderings in {final_cal_data}. If None, loads in defaults locally.
+    genotypes: boolean list of 4 elements where ith element is whether we are counting the ith genotype of ["HPV 16", "HPV 18", "HI5", "OHR"] in our HPV prevalence we are recording
+    sex: boolean list of [Whether to include Women in the sum, whether to include men in the sum]
+    percentage: whether to record values as absolute counts of infection or as percentages of population in the age bracket
+    inc_vacc: whether vaccinated individuals should be counted 
+    inc_unvacc_vacc_elig: whether unvaccinated vaccine-eligible individuals should be counted
+    inc_vacc_inelig: whether vaccine-ineligible individuals should be counted
+
+    Returns: {parameterisation number: {'true':xs, 5: y1s, 7: y2s, 10: y3s, 15: y4s}}, where in each instance xs, y1s, y2s, y3s, and y4s are lists consisting of timeseries of (detected) infections
+    """
+    from basePars import base_pars
+
+    #Asserting parameter correctness, and loading in default calibration results if needed for model running 
+    assert (final_cal_data is not None and par_labels is not None) or (final_cal_data is None and par_labels is None) #we can't have one parameter without the other, so either define both or define neither (and if neither is defined, we load them in: below)
+    if final_cal_data is None or par_labels is None: 
+        #Load in calibrated parameter sets
+        with open('finalCalibration.pickle', 'rb') as file:
+            loadeddata = pickle.load(file)
+        final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
+        par_labels = loadeddata['par_labels']
+
+
+
+
+    #Define the variable to store the data we accumulate and then return
+    final_timeseries = {param_number: {'true': None, 5: None, 7: None, 10: None, 15: None} for param_number in range(len(final_cal_data))}
+    final_timeseries_observed_rate_over_test = {param_number: {5: None, 7: None, 10: None, 15: None} for param_number in range(len(final_cal_data))}
+
+    #Define function to be used for snapshotting
+    def make_prevalence_logs(sim):
+        if sim.t==0: # At the start of running the sim, we need to store lists in the sim which will record prevalence and observed prevalence at each timepoint
+            sim.true_prevalences = []
+            sim.observed_prevalences = []
+            sim.observed_prevalence_test_rate = []
+    make_prevalence_logs.label='make_prevalence_logs'
+
+    def prevalence_logger(sim):
+        scale = sim.people.scale
+
+        # find the indices of all people we are interested in
+        relevant_indices = None #this will become a list where relevant_indices[pid] = True iff agent with id pid is part of our population of interest
+        relevant_indices = (sim.people.alive) & (sim.people.age>=24) & (sim.people.age<65) # we only care about prevalence in screening-eligibles
+        for pid in range(sim.n):
+            if not sex[int(sim.people.sex[pid])]:
+                relevant_indices[pid] = False #still need to exclude agents based on sex that we are monotoring over
+        
+        if vacc_only:
+            relevant_indices = relevant_indices & sim.people.vaccinated #nice and simple focussing just on the vaccinated, no loops needed
+        if unvacc_vacc_elig_only:
+            relevant_indices = relevant_indices & (~sim.people.vaccinated) & (sim.people.age <= 0.25*sim.t - 15)
+        if vacc_inelig_only:
+            print("not implemented yet")
+            quit()
+
+        """
+        This is an alternative way of doing the same thing that seems to be working fine in a loop below, as the sizes of populations do seem about right!
+        if not inc_vacc:
+            #Not including vaccinated people in our population of interest
+            relevant_indices = relevant_indices & (~sim.people.vaccinated)
+        if not inc_vacc_inelig:
+            #Not including people who were ineligible for vaccination (not counting followup vaccination here as it was not modelled)
+            relevant_indices = relevant_indices & ((sim.t/4+1980)-sim.people.age[pid]>=1995)
+        if not inc_unvacc_vacc_elig:
+            #Not including vaccine-eligible unvaccinated individuals
+            relevant_indices = relevant_indices & (((sim.t/4+1980)-sim.people.age[pid]<1995) | ((sim.t/4+1980)-sim.people.age[pid]>=1995 & sim.people.vaccinated))
+        """
+        """
+        #taking this out even though i think it did work - trying somethig much simpler
+        for pid in range(sim.n):
+            if relevant_indices[pid] and (not sex[int(sim.people.sex[pid])]):
+                relevant_indices[pid] = False #exclude agents is they are not of a sex we are interested in logging
+            if relevant_indices[pid] and (not inc_vacc):
+                #Exclude agent if they have been vaccinated
+                if sim.people.vaccinated[pid]:
+                    relevant_indices[pid] = False
+            if relevant_indices[pid] and (not inc_unvacc_vacc_elig):
+                #Exlude agent if they are vaccine-eligible and have not been vaccinated
+                if not sim.people.vaccinated[pid] and (sim.t/4+1980)-sim.people.age[pid]>=1995:
+                    relevant_indices[pid] = False
+            if relevant_indices[pid] and (not inc_vacc_inelig):
+                if (sim.t/4+1980)-sim.people.age[pid]<1995: #not counting followup vaccination here, as this was also not modelled
+                    relevant_indices[pid] = False
+        """
+        
+        # for each agent, log whether currently infected and also find population size
+        population_size = 0
+        total_infectious = 0
+        for pid in range(sim.n): 
+            if relevant_indices[pid]: #we only care about agents which are part of the subpopulation of interest
+                #print(scale[pid])
+                population_size += scale[pid]
+                if np.dot(sim.people.infectious[:,pid], genotypes) > 0: #True iff agent is infectious with at least one of the genotypes of interest (defined in parameter {genotypes})
+                    total_infectious += scale[pid]
+                elif np.dot(sim.people.cancerous[:,pid], genotypes) > 0: #True iff agenet is cancerous (which we model the HPV DNA test as also picking up)
+                    total_infectious += scale[pid]
+        if percentage:
+            if population_size == 0:
+                #print('Zero population size. Setting rate in this run at this timepoint to 0 to avoid error')
+                sim.true_prevalences.append(0)
+            else:
+                #print('nonzero pop size')
+                #print(f'pop size = {population_size}')
+                sim.true_prevalences.append(total_infectious/population_size)
+        else:
+            if total_infectious == 0:
+                print(f"at time {sim.t}, none infectious") 
+            sim.true_prevalences.append(total_infectious)
+                
+        # log the number of agents diagnosed as infected this year and the number of tests
+        hpv_test_names = ["routine_screening_under50","routine_screening_50andover"]#, "second_consecutive_screening", "third_consecutive_screening"]
+        total_diagnosed_infected = 0
+        total_tests = 0
+        for name in hpv_test_names:
+            hpv_test = sim.get_intervention(name) 
+            positives = list(hpv_test.outcomes['positive'])
+            negatives = list(hpv_test.outcomes['negative']) 
+            inadequates = list(hpv_test.outcomes['inadequate'])
+            for pid in positives:
+                if relevant_indices[pid]:
+                    total_diagnosed_infected += scale[pid]
+                    total_tests += scale[pid] 
+            for pid in negatives + inadequates:
+                if relevant_indices[pid]:
+                    total_tests += scale[pid]
+
+        if percentage:
+            if population_size == 0:
+                sim.observed_prevalences.append(0)
+            else:
+                sim.observed_prevalences.append(total_diagnosed_infected/population_size)
+        else:
+            sim.observed_prevalences.append(total_diagnosed_infected)
+        sim.observed_prevalence_test_rate.append(total_diagnosed_infected/total_tests if total_tests>0 else 0)
+
+    prevalence_logger.label='prevalence_logger'
+
+
+    #Iterate through the simulations 
+    for interval in [5,7,10,15]:
+        #Set up simulation base parameters
+        base_pars = deepcopy(base_pars)
+        base_pars['interventions'] = [make_prevalence_logs] + screeningAlgorithms.get_interventions(v=interval,u=interval,a=interval) + NHS_Vacc.vaccinations + [prevalence_logger]
+        
+        
+
+        #Run all the simulations
+        num_params = len(final_cal_data) #number of parameterisations which make up the ensemble model we are using
+        for i in tqdm(range(num_params)):
+            cal_params = final_cal_data[i][0] #specific parametersation of this iteration (note final_cal_data[i] is a tuple (parameterisation tuple, GOF, order statistic of GOF within the calibration that generated it, ID of calibration where the parameterisation was sampled ))
+            tmp_base_pars = deepcopy(base_pars) #make deep copy of provided {base_pars} to add specific calibration parameters and logger to it without changing the original copy passed into this function
+
+            #Set seed
+            tmp_base_pars['rand_seed'] = seed*num_params + i #this ensures that we give HPVsim a unique random seed for each parameterisation (seed fixed) and for each seed (parameterisation fixed); so no two runs - unless both seed and parameterisation are the same - will have the same HPVsim seed, and therefore we can assume independance 
+
+            #Set non-genotype calibrated parameters to this iteration's parameterisation
+            tmp_base_pars['beta'] = cal_params[par_labels.index('params_beta')]
+            tmp_base_pars['f_cross_layer'] = cal_params[par_labels.index('params_f_cross_layer')]
+            tmp_base_pars['m_cross_layer'] = cal_params[par_labels.index('params_m_cross_layer')]
+
+            #Set up {tmp_base_pars} to allow for specification of genotype parameters
+            tmp_base_pars['genotype_pars'] = sc.objdict() #initialise genotype parameters within hpvsim
+            for g in tmp_base_pars['genotypes']:
+                tmp_base_pars['genotype_pars'][g] = get_genotype_pars(genotype=g)
+
+            #Set genotype calibrated parameters to this iteration's parameterisation
+            tmp_base_pars['genotype_pars']['hpv16']['cin_fn']['k'] = cal_params[par_labels.index('params_hpv16_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hpv16']['dur_cin']['par1'] = cal_params[par_labels.index('params_hpv16_dur_cin_par1')]
+
+            tmp_base_pars['genotype_pars']['hpv18']['cin_fn']['k'] = cal_params[par_labels.index('params_hpv18_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hpv18']['dur_cin']['par1'] = cal_params[par_labels.index('params_hpv18_dur_cin_par1')]
+            
+            tmp_base_pars['genotype_pars']['hi5']['cin_fn']['k'] = cal_params[par_labels.index('params_hi5_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hi5']['dur_cin']['par1'] = cal_params[par_labels.index('params_hi5_dur_cin_par1')]
+            tmp_base_pars['genotype_pars']['hi5']['rel_beta'] = cal_params[par_labels.index('params_hi5_rel_beta')]
+
+            tmp_base_pars['genotype_pars']['ohr']['cin_fn']['k'] = cal_params[par_labels.index('params_ohr_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['ohr']['dur_cin']['par1'] = cal_params[par_labels.index('params_ohr_dur_cin_par1')]
+            tmp_base_pars['genotype_pars']['ohr']['rel_beta'] = cal_params[par_labels.index('params_ohr_rel_beta')]
+
+            #Initialise and run sim itself
+            sim = hpv.Sim(tmp_base_pars)
+            sim.run()
+            
+
+            #Extract prevalence logs from sim and add to set of all prevalence logs
+            final_timeseries[i]['true'] = sim.true_prevalences #overrides until we get to 15 for that timeseries
+            final_timeseries[i][interval] = sim.observed_prevalences
+            final_timeseries_observed_rate_over_test[i][interval] = sim.observed_prevalence_test_rate
+        
+
+    return final_timeseries, final_timeseries_observed_rate_over_test
+
+def plot_observed_infections_curves():
+    seed = 0
+
+    infections_curves, rate_over_tests = get_infections_curves(seed=seed, percentage=True, 
+                                              vacc_only=False,
+                                              unvacc_vacc_elig_only=True,
+                                              vacc_inelig_only=False,
+                                              )
+
+    #Extract lists of seperate infection trajectories
+    trues = []
+    fives = []
+    sevens = []
+    tens = []
+    fifteens = []
+    for i in infections_curves.keys():
+        trues.append(smooth_list(infections_curves[i]['true'], 4))#smooth with smoothing width of 4 to do an annual rolling average
+        fives.append(smooth_list(infections_curves[i][5],4))
+        sevens.append(smooth_list(infections_curves[i][7],4))
+        tens.append(smooth_list(infections_curves[i][10],4))
+        fifteens.append(smooth_list(infections_curves[i][15],4))
+    plt.plot(np.median(trues, axis=0), color="#022c5c", label='ground truth prevalence')
+    plt.plot(np.median(fives, axis=0), color="#034e91", label='5-yearly screening')
+    plt.plot(np.median(sevens, axis=0), color="#0072b2", label='7-yearly screening')
+    plt.plot(np.median(tens, axis=0), color="#5899d1", label='10-yearly screening')
+    plt.plot(np.median(fifteens, axis=0), color="#9ccbec", label='15-yearly screening')
+    plt.title("UNVACCVACCELIGPOP Proportion of population getting a positive test this year. Dont forget to turn 3-yearly screening callbacks to a big number to not inflate with callbacks!! in screeningAlgorithms.py line 97")
+    plt.legend()
+    plt.show()
+
+    #Extract lists of seperate infection trajectories for rate over tests
+    trues = []
+    fives = []
+    sevens = []
+    tens = []
+    fifteens = []
+    for i in infections_curves.keys():
+        trues.append(smooth_list(infections_curves[i]['true'], 4))#add ground truth there too to have a reference
+        fives.append(smooth_list(rate_over_tests[i][5],4))
+        sevens.append(smooth_list(rate_over_tests[i][7],4))
+        tens.append(smooth_list(rate_over_tests[i][10],4))
+        fifteens.append(smooth_list(rate_over_tests[i][15],4))
+    plt.plot(np.median(trues, axis=0), color="#022c5c", label='ground truth prevalcne')
+    plt.plot(np.median(fives, axis=0), color="#034e91", label='5-yearly screening')
+    plt.plot(np.median(sevens, axis=0), color="#0072b2", label='7-yearly screening')
+    plt.plot(np.median(tens, axis=0), color="#5899d1", label='10-yearly screening')
+    plt.plot(np.median(fifteens, axis=0), color="#9ccbec", label='15-yearly screening')
+    plt.title("UNVACCVACCELIGPOP Proportion of those undergoing regular screening that have a positive test this year. Dont forget to turn 3-yearly screening callbacks to a big number to not inflate with callbacks!! in screeningAlgorithms.py line 97")
+    plt.legend()
+    plt.show()
+
+
 ###- (4) UTILITY FUNCTIONALITY -###    
 def get_history_matches_paramseeds(alg, 
                                    data_name = 'inc_cancers_fullpop_alltypes',
@@ -1081,7 +1342,9 @@ def plot_quant_over_time(ax,
                          algs=None, show_quartiles = False, show_normal_CI = False,
                          alg_colors=algorithm_colors, alg_labels=algorithm_labels,
                          burnin_timesteps=4*20, burnout_timesteps = 4*5, smoothing_kernel=4,
-                         accepted_paramandseeds = None):
+                         accepted_paramandseeds = None,
+                         linestyle = None, transparancy_alpha=0.5, show_bounding_lines = True,
+                         print_tp = None):
     """
     ax: matplotlib.pyplot Axis object on which to plot
     data_name: what is to be plotted on the y axis (data_name<-data_names)
@@ -1100,6 +1363,12 @@ def plot_quant_over_time(ax,
     smoothing_kernel: width (in timesteps) of moving average filter over timeseries
 
     accepted_paramandseeds: If specified, defines the set of parameter-seed pairs which we use (all others are not used). Otherwise, plots all.
+    
+    linestyle (str): linestyle for matplotlib median/mean line
+    transparancy_alpha: controls opacity of shaded region for CI/central 50th percentile
+    show_bounding_lines (bool): whether to outline the shaded region for CI/central 50th percentile
+
+    print_tp: if set to a particular timepoint (not none) then we also print out the mean/median (as appropriate) value of each curve at this timpoint
     """
     #Deal with parameters (assign defaults and check correctness)
     if algs is None:
@@ -1195,13 +1464,17 @@ def plot_quant_over_time(ax,
         middles = middle_timeseries_by_alg[alg][burnin_timesteps:T-burnout_timesteps]
         xs = range(len(middles))
 
+        if print_tp is not None:
+            print(f"{alg_labels[alg] if alg in alg_labels.keys() else alg} : {4*middle_timeseries_by_alg[alg][print_tp]}")
+
         if show_normal_CI or show_quartiles:
             lowers = lower_timeseries_by_alg[alg][burnin_timesteps:T-burnout_timesteps]
             uppers = upper_timeseries_by_alg[alg][burnin_timesteps:T-burnout_timesteps]
             ax.fill_between(xs, lowers, uppers, alpha=0.1, color=alg_colors[alg] if alg in alg_colors.keys() else None)
-            ax.plot(xs, lowers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=0.5)
-            ax.plot(xs, uppers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=0.5)
-        ax.plot(xs, middles, color=alg_colors[alg] if alg in alg_colors.keys() else None, label= alg_labels[alg] if alg in alg_labels.keys() else alg) 
+            if show_bounding_lines:
+                ax.plot(xs, lowers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=transparancy_alpha)
+                ax.plot(xs, uppers, color=alg_colors[alg] if alg in alg_colors.keys() else None, linestyle='dotted', alpha=transparancy_alpha)
+        ax.plot(xs, middles, color=alg_colors[alg] if alg in alg_colors.keys() else None, label= alg_labels[alg] if alg in alg_labels.keys() else alg, linestyle=linestyle) 
     return ax
 
 def plot_x_per_y(ax, 
@@ -1551,6 +1824,7 @@ def plot_sum_barchart(ax, bar_colors, line_colors,
     LQs = [np.percentile(totals_by_alg[alg], 25) for alg in algs]
     medians = [np.median(totals_by_alg[alg]) for alg in algs]
     UQs = [np.percentile(totals_by_alg[alg], 75) for alg in algs]
+    print(medians)
 
     #Turn colors into lists with ordering to match {algs}
     bar_colors = [bar_colors[alg] for alg in algs]
@@ -1632,7 +1906,8 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
                             significance=sig_level,
                             color_histogram_sides = True,
                             minimise = True,
-                            accepted_paramandseeds = None):
+                            accepted_paramandseeds = None,
+                            use_tqdm = True):
     """
     Plots (onto {ax}) a full comparison between all the algorithms in {algs}, in terms of quantity {data_name} added up in timepoint range [start_tp, end_tp]. 
     
@@ -1648,7 +1923,10 @@ def plot_alg_comparison_grid(axs,algs, data_name, alg_colors=algorithm_colors,
     #Plot the figure, square by square
     min_histogram_x, max_histogram_x = 0,0 #these will be populated as we generate the histgrams and used later to uniformly scale the horizontal axis of the sqaures in which there are histograms
     min_std, max_std = 10000,0 #track the standard deviations of each set of values over which we test, for accurate power tests
-    for i in tqdm(range(len(algs))):
+    for i in tqdm(range(len(algs))) if use_tqdm else range(len(algs)):
+        if use_tqdm:
+            print() #this ensures that we get a new line after the tqdm does its thing
+        
         for j in range(len(algs)):
             ax=axs[i,j]
             ax.set_yticks([])
@@ -1960,16 +2238,70 @@ def fig3_timeseries_helper(data_name,
 
 
 if __name__=="__main__":
+    #plot_observed_infections_curves()
+    #quit()
+    """
+    ttest_powerplot(plt.subplots(1,1)[1],
+                    4,
+                    7,
+                    alpha=0.01,
+                    nobs=132)
+    plt.show()
+    quit()
+    """
+
+
+    #"""
+    #Uncomment this block of code to get code which gets the specific values referred to in the abstract/results section
+    algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
+    algs_to_plot = ['V10U7A5', 'V15U10A5']
+    for i in range(len(algs_to_plot)):
+        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
+
+    accepted_paramseeds, _ = get_history_matches_paramseeds(algs_to_plot[0],
+                                   'inc_cancers_fullpop_alltypes',
+                                   cancer_incidence_history,
+                                   0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                   )
+
+    #prev_cancers_ud5y_fullpop_alltypes
+    #inc_cancers_fullpop_alltypes
+
+    print("1")
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'prev_cancers_ud5y_fullpop_alltypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds, 
+                         #show_quartiles=True, #gets us to use mean not median
+                         print_tp = 160+80)
+
+    print("2")
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'prev_cancers_ud5y_fullpop_alltypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds, #prev_cancers_ud5y_fullpop_alltypes
+                         print_tp = 200+80)
+    
+    print("3")
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_fullpop_alltypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds, 
+                         #show_quartiles=True, #gets us to use mean not median
+                         print_tp = 160+80)
+
+    print("4")
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_fullpop_alltypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds, 
+                         print_tp = 200+80)
+
+    
+    #"""
+
     """
     #Uncomment this to get the timeseries plots for Figure 3
 
     show_quartiles = True #else, shows just the mean
     show_legend = False
-    show_vaccwise = False
-    show_cohortwise = False
+    show_vaccwise = True
+    show_cohortwise = True
     show_hybrid = True
-    show_uniform = False
-    show_baseline_mean = True #good to have this on as a comparator when baseline is not in the plot
+    show_uniform = True
+    show_baseline_mean = False #good to have this on as a comparator when baseline is not in the plot
 
     ax = fig3_timeseries_helper('inc_cancers_fullpop_alltypes', 
                     show_quartiles=show_quartiles,#show quartiles 
@@ -2033,6 +2365,8 @@ if __name__=="__main__":
 
     """
     #Uncomment this to get the barchart plot at the bottom of Figure 3
+    pop='ineligiblepop'
+
     algs_to_plot = [ 'V5U5A5','V10U10A10','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5']
     for i in range(len(algs_to_plot)):
         algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
@@ -2043,12 +2377,13 @@ if __name__=="__main__":
                                    0.15 ,#error limit, 0.15-0.2 is pretty valid i think
                                    )
     fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    print("cancer incidence")
     plot_sum_barchart(ax, 
                       bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
-                      data_name='inc_cancers_fullpop_alltypes',
-                      #start_tp=200, end_tp=280, #this gets sum 2030-2050
+                      data_name=f'inc_cancers_{pop}_alltypes',
+                      start_tp=200, end_tp=280, #this gets sum 2030-2050
                       #start_tp=280, end_tp=283, #this gets sum in the year 2050
-                      start_tp=240, end_tp=243, # this gets sum in the year 2040
+                      #start_tp=240, end_tp=243, #this gets sum in the year 2040
                       normalise_per_100k=False,
                       algs=algs_to_plot,
                       accepted_paramandseeds=accepted_paramseeds,
@@ -2058,12 +2393,13 @@ if __name__=="__main__":
     ax.set_ylabel('inc cancers')
 
     fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    print("routine screens")
     plot_sum_barchart(ax, 
                       bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
-                      data_name='routine_screens_fullpop',
-                      #start_tp=200, end_tp=280, #this gets sum 2030-2050
+                      data_name=f'routine_screens_{pop}',
+                      start_tp=200, end_tp=280, #this gets sum 2030-2050
                       #start_tp=280, end_tp=283, #this gets sum in the year 2050
-                      start_tp=240, end_tp=243, # this gets sum in the year 2040
+                      #start_tp=240, end_tp=243, #this gets sum in the year 2040
                       normalise_per_100k=False,
                       algs=algs_to_plot,
                       accepted_paramandseeds=accepted_paramseeds,
@@ -2073,12 +2409,13 @@ if __name__=="__main__":
     ax.set_ylabel('screens')
     
     fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    print("ud5y")
     plot_sum_barchart(ax, 
                       bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
-                      data_name='prev_cancers_ud5y_fullpop_alltypes',
-                      #start_tp=200, end_tp=280, #this gets sum 2030-2050
+                      data_name=f'prev_cancers_ud5y_{pop}_alltypes',
+                      start_tp=200, end_tp=280, #this gets sum 2030-2050
                       #start_tp=280, end_tp=283, #this gets sum in the year 2050
-                      start_tp=240, end_tp=243, # this gets sum in the year 2040
+                      #start_tp=240, end_tp=243, #this gets sum in the year 2040
                       normalise_per_100k=False,
                       algs=algs_to_plot,
                       accepted_paramandseeds=accepted_paramseeds,
@@ -2088,16 +2425,17 @@ if __name__=="__main__":
     ax.set_ylabel('ud5y')
     
     fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    print("screens per dioagnosied cancer")
     plot_sum_barchart(ax, 
                       bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
-                      data_name='routine_screens_fullpop',
-                      #start_tp=200, end_tp=280, #this gets sum 2030-2050
-                      #start_tp=280, end_tp=283, #this gets sum in the year 2050
-                      start_tp=240, end_tp=243, # this gets sum in the year 2040
+                      data_name=f'routine_screens_{pop}',
+                    #  start_tp=200, end_tp=280, #this gets sum 2030-2050
+                    #  start_tp=240, end_tp=280, #this gets sum in 2040-50
+                      start_tp=200, end_tp=240, #this gets sum in 2030-2040
                       normalise_per_100k=False,
                       algs=algs_to_plot,
                       accepted_paramandseeds=accepted_paramseeds,
-                      denominator_data_name='inc_cancers_diagnosed_fullpop_alltypes',
+                      denominator_data_name=f'inc_cancers_diagnosed_{pop}_alltypes',
                       )
     for ytick in ax.get_yticks():
         ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
@@ -2112,6 +2450,7 @@ if __name__=="__main__":
     algs_to_plot = ['V5U5A5','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
     for i in range(len(algs_to_plot)):
         algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
+        #algs_to_plot[i] += '_6_8_68_76_55_55_9_9__96_7_13'
 
     accepted_paramseeds, _ = get_history_matches_paramseeds(algs_to_plot[0],
                                    'inc_cancers_fullpop_alltypes',
@@ -2122,11 +2461,13 @@ if __name__=="__main__":
     fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
     plot_alg_comparison_grid(axs,
                              algs_to_plot,
-                             'inc_cancers_ineligiblepop_alltypes',#'inc_cancers_fullpop_alltypes',
-                           #  start_tp=200, end_tp = 280, #corresponds to sum 2030-2050
-                            # start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
-                             start_tp=280,end_tp=283, #this gets the sum over the year 2050
-                             accepted_paramandseeds=accepted_paramseeds)
+                             'prev_cancers_ud5y_ineligiblepop_alltypes', #'inc_cancers_fullpop_alltypes',
+                         #    start_tp=200, end_tp = 280, #corresponds to sum 2030-2050
+                             start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
+                           #  start_tp=280,end_tp=283, #this gets the sum over the year 2050
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
     
     plt.show()
     """
@@ -2149,7 +2490,7 @@ if __name__=="__main__":
                                )
     """
 
-    #"""
+    """
     #Uncomment this to get the equity timeseries plots
     algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
     for i in range(len(algs_to_plot)):
@@ -2186,8 +2527,8 @@ if __name__=="__main__":
     ax.set_ylabel('eligible unvaccpop routine screens')
 
     plt.show()
-
-
+    
+    
     fig, ax = plt.subplots(1,1,figsize=(7, 5))
     plot_quant_over_time(ax, 'prev_cancers_ud5y_vaccpop_vacctypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds)
     ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
@@ -2235,7 +2576,6 @@ if __name__=="__main__":
     for ytick in ax.get_yticks():
         ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
     ax.set_ylabel('ud5y: eligible unvacc, nonvacctypes')
-
 
 
 
@@ -2293,13 +2633,90 @@ if __name__=="__main__":
 
 
     plt.show()
-    #"""
+    """
 
 
+    """
+    #Uncomment this for plots comparing cancer rates in vaccine-eligibles under different uptakes overlayed
+        #^ the point of this plot is to look at the effectiveness of the vaccination programme under changing uptake, and comparing along different algorithms 
+    
+    #KATE: "cancer rates amongst vaccination-eligibles only, for 60,80,90 coverage?"
+
+    accepted_paramseeds, _ = get_history_matches_paramseeds('V5U5A5_6_8_68_76_55_55_9_9__96_7_13',
+                                   'inc_cancers_fullpop_alltypes',
+                                   cancer_incidence_history,
+                                   0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                   )
+
+
+    stem = 'V5U5A5'
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_6_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True, alg_colors={f"{stem}_6_8_68_76_55_55_9_9__96_7_13": 'red'}, transparancy_alpha = 0.2, show_bounding_lines=False, smoothing_kernel=12)
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_8_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True, alg_colors={f"{stem}_8_8_68_76_55_55_9_9__96_7_13": 'black'}, transparancy_alpha = 0.2, show_bounding_lines = False, smoothing_kernel=12)
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_9_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True,  alg_colors={f"{stem}_9_8_68_76_55_55_9_9__96_7_13": 'green'}, transparancy_alpha = 0.2, show_bounding_lines=False, smoothing_kernel=12)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,0.25))
+    ax.set_yticks(0.5*np.array([0,0.2,0.4,0.6,0.8,1]),2* np.array([0,0.2,0.4,0.6,0.8,1])) 
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_title(stem)
+
+    stem = 'V10U5A5'
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_6_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True, alg_colors={f"{stem}_6_8_68_76_55_55_9_9__96_7_13": 'red'}, transparancy_alpha = 0.2, show_bounding_lines=False, smoothing_kernel=8)
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_8_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True, alg_colors={f"{stem}_8_8_68_76_55_55_9_9__96_7_13": 'black'}, transparancy_alpha = 0.2, show_bounding_lines = False, smoothing_kernel=8)
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_9_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True,  alg_colors={f"{stem}_9_8_68_76_55_55_9_9__96_7_13": 'green'}, transparancy_alpha = 0.2, show_bounding_lines=False, smoothing_kernel=8)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,0.25))
+    ax.set_yticks(0.5*np.array([0,0.2,0.4,0.6,0.8,1]),2* np.array([0,0.2,0.4,0.6,0.8,1])) 
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_title(stem)
+
+    stem = 'V10U10A5'
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_6_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True, alg_colors={f"{stem}_6_8_68_76_55_55_9_9__96_7_13": 'red'}, transparancy_alpha = 0.2, show_bounding_lines=False, smoothing_kernel=8)
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_8_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True, alg_colors={f"{stem}_8_8_68_76_55_55_9_9__96_7_13": 'black'}, transparancy_alpha = 0.2, show_bounding_lines = False, smoothing_kernel=8)
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_9_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True,  alg_colors={f"{stem}_9_8_68_76_55_55_9_9__96_7_13": 'green'}, transparancy_alpha = 0.2, show_bounding_lines=False, smoothing_kernel=8)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,0.25))
+    ax.set_yticks(0.5*np.array([0,0.2,0.4,0.6,0.8,1]),2* np.array([0,0.2,0.4,0.6,0.8,1])) 
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_title(stem)
+
+    stem = 'V10U7A5'
+    fig, ax = plt.subplots(1,1,figsize=(7, 5))
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_6_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True, alg_colors={f"{stem}_6_8_68_76_55_55_9_9__96_7_13": 'red'}, transparancy_alpha = 0.2, show_bounding_lines=False, smoothing_kernel=8)
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_8_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True, alg_colors={f"{stem}_8_8_68_76_55_55_9_9__96_7_13": 'black'}, transparancy_alpha = 0.2, show_bounding_lines = False, smoothing_kernel=8)
+    plot_quant_over_time(ax, 'inc_cancers_eligiblepop_alltypes', True, [f"{stem}_9_8_68_76_55_55_9_9__96_7_13"], accepted_paramandseeds=accepted_paramseeds,  show_normal_CI=True,  alg_colors={f"{stem}_9_8_68_76_55_55_9_9__96_7_13": 'green'}, transparancy_alpha = 0.2, show_bounding_lines=False, smoothing_kernel=8)
+    ax.set_xticks([80,120,160,200 ],[2020,2030,2040,2050])
+    ax.set_xlim(80,200)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_ylim((0,0.25))
+    ax.set_yticks(0.5*np.array([0,0.2,0.4,0.6,0.8,1]),2* np.array([0,0.2,0.4,0.6,0.8,1])) 
+    ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
+    for ytick in ax.get_yticks():
+        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_title(stem)
     
 
+    plt.show()
+    """
 
 
-    
 
     
