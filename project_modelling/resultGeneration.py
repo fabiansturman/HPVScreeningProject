@@ -628,7 +628,7 @@ def run_sim_and_save_raw_result(provided_base_pars, seed:int,
         save_timeseries_from_log(log, seed, i, alg_name)
 
 
-###- (3) GET INFECTION HISTOGRAMS-###
+###- (3) GET INFECTION RESULTS-###
 def run_sim_and_get_infection_histogram(seed:int, 
                                         age_bins, snapshot_tps,
                                         final_cal_data=None, par_labels=None,
@@ -773,8 +773,6 @@ def get_infections_curves( seed:int,
                                     final_cal_data=None, par_labels=None,
                                     genotypes = [True, True, True, True],
                                     sex = [True, False],
-                                    percentage = True,
-                                    #inc_vacc = True, inc_unvacc_vacc_elig = True, inc_vacc_inelig = True
                                     vacc_only = False, unvacc_vacc_elig_only = False, vacc_inelig_only =False
                                     ):
     """ 
@@ -782,14 +780,14 @@ def get_infections_curves( seed:int,
     Records HPV infection prevalence over the population defined in the parameters (inc_vacc, inv_unvacc_vacc_elig, and inc_vacc_inelig toggle the population over including any number of 3 possible partitions).
     Returns HPV infection prevalence over time, alongside detected HPV infection prevalence for 5,7,10, and 15-yearly screening over the full population (but  as we only record for the specified subpopulation, it is equivalent to focussing in on that subpopulation; noting that infections do not change substantially if at all as screening algorithms change, so whether we screen a certain frequency for everyone or just the subpopulation we are recording doesnt make a difference)
 
-    Infection prevalence for a given genotype is defined as the percentage of people with the INFECTIOUS state for that genotype, to be consistent with what testing could pick up in the real world (as this function is to be used for validation against real-world data).
-
+    Ground truth prevalence for a given genotype is defined as the percentage of people with the INFECTIOUS or CANCEROUS state for that genotype, to be consistent with what testing could pick up in the real world (as this function is to be used for validation against real-world data).
+    Detected prevalence is the proportion of tests which come back +ve
+    
     seed: RNG seed for simulation
     final_cal_data: a list of parameter tuples [(v11,v12,...,v1p),...,(vn1,vn2,...,vnp)] where there are p calibrated parameters and n parameterisations. If None, loads in defaults locally.
     par_labels: the internal HPVsim name for each of the p calibrated parameters, corresponding to the tuple orderings in {final_cal_data}. If None, loads in defaults locally.
     genotypes: boolean list of 4 elements where ith element is whether we are counting the ith genotype of ["HPV 16", "HPV 18", "HI5", "OHR"] in our HPV prevalence we are recording
     sex: boolean list of [Whether to include Women in the sum, whether to include men in the sum]
-    percentage: whether to record values as absolute counts of infection or as percentages of population in the age bracket
     inc_vacc: whether vaccinated individuals should be counted 
     inc_unvacc_vacc_elig: whether unvaccinated vaccine-eligible individuals should be counted
     inc_vacc_inelig: whether vaccine-ineligible individuals should be counted
@@ -799,6 +797,7 @@ def get_infections_curves( seed:int,
     from basePars import base_pars
 
     #Asserting parameter correctness, and loading in default calibration results if needed for model running 
+    print("WARNING: CHECK!! For this test to work correctly, must not do the 3-yearly followup testing of individuals as that will inflate +ve test rate. Change this in screeningAlgorithms.py")
     assert (final_cal_data is not None and par_labels is not None) or (final_cal_data is None and par_labels is None) #we can't have one parameter without the other, so either define both or define neither (and if neither is defined, we load them in: below)
     if final_cal_data is None or par_labels is None: 
         #Load in calibrated parameter sets
@@ -808,17 +807,13 @@ def get_infections_curves( seed:int,
         par_labels = loadeddata['par_labels']
 
 
-
-
     #Define the variable to store the data we accumulate and then return
     final_timeseries = {param_number: {'true': None, 5: None, 7: None, 10: None, 15: None} for param_number in range(len(final_cal_data))}
-    final_timeseries_observed_rate_over_test = {param_number: {5: None, 7: None, 10: None, 15: None} for param_number in range(len(final_cal_data))}
 
     #Define function to be used for snapshotting
     def make_prevalence_logs(sim):
         if sim.t==0: # At the start of running the sim, we need to store lists in the sim which will record prevalence and observed prevalence at each timepoint
             sim.true_prevalences = []
-            sim.observed_prevalences = []
             sim.observed_prevalence_test_rate = []
     make_prevalence_logs.label='make_prevalence_logs'
 
@@ -831,45 +826,13 @@ def get_infections_curves( seed:int,
         for pid in range(sim.n):
             if not sex[int(sim.people.sex[pid])]:
                 relevant_indices[pid] = False #still need to exclude agents based on sex that we are monotoring over
-        
         if vacc_only:
             relevant_indices = relevant_indices & sim.people.vaccinated #nice and simple focussing just on the vaccinated, no loops needed
         if unvacc_vacc_elig_only:
             relevant_indices = relevant_indices & (~sim.people.vaccinated) & (sim.people.age <= 0.25*sim.t - 15)
         if vacc_inelig_only:
-            print("not implemented yet")
-            quit()
+            relevant_indices = relevant_indices & (sim.people.age > 0.25*sim.t - 15)
 
-        """
-        This is an alternative way of doing the same thing that seems to be working fine in a loop below, as the sizes of populations do seem about right!
-        if not inc_vacc:
-            #Not including vaccinated people in our population of interest
-            relevant_indices = relevant_indices & (~sim.people.vaccinated)
-        if not inc_vacc_inelig:
-            #Not including people who were ineligible for vaccination (not counting followup vaccination here as it was not modelled)
-            relevant_indices = relevant_indices & ((sim.t/4+1980)-sim.people.age[pid]>=1995)
-        if not inc_unvacc_vacc_elig:
-            #Not including vaccine-eligible unvaccinated individuals
-            relevant_indices = relevant_indices & (((sim.t/4+1980)-sim.people.age[pid]<1995) | ((sim.t/4+1980)-sim.people.age[pid]>=1995 & sim.people.vaccinated))
-        """
-        """
-        #taking this out even though i think it did work - trying somethig much simpler
-        for pid in range(sim.n):
-            if relevant_indices[pid] and (not sex[int(sim.people.sex[pid])]):
-                relevant_indices[pid] = False #exclude agents is they are not of a sex we are interested in logging
-            if relevant_indices[pid] and (not inc_vacc):
-                #Exclude agent if they have been vaccinated
-                if sim.people.vaccinated[pid]:
-                    relevant_indices[pid] = False
-            if relevant_indices[pid] and (not inc_unvacc_vacc_elig):
-                #Exlude agent if they are vaccine-eligible and have not been vaccinated
-                if not sim.people.vaccinated[pid] and (sim.t/4+1980)-sim.people.age[pid]>=1995:
-                    relevant_indices[pid] = False
-            if relevant_indices[pid] and (not inc_vacc_inelig):
-                if (sim.t/4+1980)-sim.people.age[pid]<1995: #not counting followup vaccination here, as this was also not modelled
-                    relevant_indices[pid] = False
-        """
-        
         # for each agent, log whether currently infected and also find population size
         population_size = 0
         total_infectious = 0
@@ -881,18 +844,10 @@ def get_infections_curves( seed:int,
                     total_infectious += scale[pid]
                 elif np.dot(sim.people.cancerous[:,pid], genotypes) > 0: #True iff agenet is cancerous (which we model the HPV DNA test as also picking up)
                     total_infectious += scale[pid]
-        if percentage:
-            if population_size == 0:
-                #print('Zero population size. Setting rate in this run at this timepoint to 0 to avoid error')
-                sim.true_prevalences.append(0)
-            else:
-                #print('nonzero pop size')
-                #print(f'pop size = {population_size}')
-                sim.true_prevalences.append(total_infectious/population_size)
+        if population_size == 0:
+            sim.true_prevalences.append(0)
         else:
-            if total_infectious == 0:
-                print(f"at time {sim.t}, none infectious") 
-            sim.true_prevalences.append(total_infectious)
+            sim.true_prevalences.append(total_infectious/population_size)
                 
         # log the number of agents diagnosed as infected this year and the number of tests
         hpv_test_names = ["routine_screening_under50","routine_screening_50andover"]#, "second_consecutive_screening", "third_consecutive_screening"]
@@ -910,16 +865,7 @@ def get_infections_curves( seed:int,
             for pid in negatives + inadequates:
                 if relevant_indices[pid]:
                     total_tests += scale[pid]
-
-        if percentage:
-            if population_size == 0:
-                sim.observed_prevalences.append(0)
-            else:
-                sim.observed_prevalences.append(total_diagnosed_infected/population_size)
-        else:
-            sim.observed_prevalences.append(total_diagnosed_infected)
         sim.observed_prevalence_test_rate.append(total_diagnosed_infected/total_tests if total_tests>0 else 0)
-
     prevalence_logger.label='prevalence_logger'
 
 
@@ -929,13 +875,14 @@ def get_infections_curves( seed:int,
         base_pars = deepcopy(base_pars)
         base_pars['interventions'] = [make_prevalence_logs] + screeningAlgorithms.get_interventions(v=interval,u=interval,a=interval) + NHS_Vacc.vaccinations + [prevalence_logger]
         
-        
-
         #Run all the simulations
         num_params = len(final_cal_data) #number of parameterisations which make up the ensemble model we are using
         for i in tqdm(range(num_params)):
             cal_params = final_cal_data[i][0] #specific parametersation of this iteration (note final_cal_data[i] is a tuple (parameterisation tuple, GOF, order statistic of GOF within the calibration that generated it, ID of calibration where the parameterisation was sampled ))
             tmp_base_pars = deepcopy(base_pars) #make deep copy of provided {base_pars} to add specific calibration parameters and logger to it without changing the original copy passed into this function
+
+            tmp_base_pars['n_agents'] = 20_000 #TODO: remove this once I know the code is working about right
+
 
             #Set seed
             tmp_base_pars['rand_seed'] = seed*num_params + i #this ensures that we give HPVsim a unique random seed for each parameterisation (seed fixed) and for each seed (parameterisation fixed); so no two runs - unless both seed and parameterisation are the same - will have the same HPVsim seed, and therefore we can assume independance 
@@ -968,25 +915,22 @@ def get_infections_curves( seed:int,
             #Initialise and run sim itself
             sim = hpv.Sim(tmp_base_pars)
             sim.run()
-            
 
             #Extract prevalence logs from sim and add to set of all prevalence logs
             final_timeseries[i]['true'] = sim.true_prevalences #overrides until we get to 15 for that timeseries
-            final_timeseries[i][interval] = sim.observed_prevalences
-            final_timeseries_observed_rate_over_test[i][interval] = sim.observed_prevalence_test_rate
+            final_timeseries[i][interval] = sim.observed_prevalence_test_rate
         
-
-    return final_timeseries, final_timeseries_observed_rate_over_test
+    return final_timeseries
 
 def plot_observed_infections_curves():
     seed = 0
 
-    infections_curves, rate_over_tests = get_infections_curves(seed=seed, percentage=True, 
+    infections_curves = get_infections_curves(seed=seed, 
                                               vacc_only=False,
-                                              unvacc_vacc_elig_only=True,
+                                              unvacc_vacc_elig_only=False,
                                               vacc_inelig_only=False,
                                               )
-
+    
     #Extract lists of seperate infection trajectories
     trues = []
     fives = []
@@ -994,38 +938,244 @@ def plot_observed_infections_curves():
     tens = []
     fifteens = []
     for i in infections_curves.keys():
-        trues.append(smooth_list(infections_curves[i]['true'], 4))#smooth with smoothing width of 4 to do an annual rolling average
-        fives.append(smooth_list(infections_curves[i][5],4))
-        sevens.append(smooth_list(infections_curves[i][7],4))
-        tens.append(smooth_list(infections_curves[i][10],4))
-        fifteens.append(smooth_list(infections_curves[i][15],4))
-    plt.plot(np.median(trues, axis=0), color="#022c5c", label='ground truth prevalence')
-    plt.plot(np.median(fives, axis=0), color="#034e91", label='5-yearly screening')
-    plt.plot(np.median(sevens, axis=0), color="#0072b2", label='7-yearly screening')
-    plt.plot(np.median(tens, axis=0), color="#5899d1", label='10-yearly screening')
-    plt.plot(np.median(fifteens, axis=0), color="#9ccbec", label='15-yearly screening')
-    plt.title("UNVACCVACCELIGPOP Proportion of population getting a positive test this year. Dont forget to turn 3-yearly screening callbacks to a big number to not inflate with callbacks!! in screeningAlgorithms.py line 97")
+        trues.append(smooth_list(infections_curves[i]['true'], 12))#smooth with smoothing width of 12 to do an 3-yearly rolling average
+        fives.append(smooth_list(infections_curves[i][5],12))
+        sevens.append(smooth_list(infections_curves[i][7],12))
+        tens.append(smooth_list(infections_curves[i][10],12))
+        fifteens.append(smooth_list(infections_curves[i][15],12))
+    
+    _ , ax = plt.subplots(1,1, figsize=(7, 5))
+    ax.plot(np.median(trues, axis=0), color="black", linestyle='dotted', label='ground truth prevalence')
+    ax.fill_between(list(range(len(trues[0]))),
+                    np.percentile(trues, 25, axis=0), np.percentile(trues, 75, axis=0), 
+                    color="black", alpha=0.15)
+    ax.plot(np.median(fives, axis=0), color="#022c5c", label='5 yearly screening')
+    ax.fill_between(list(range(len(fives[0]))),
+                    np.percentile(fives, 25, axis=0), np.percentile(fives, 75, axis=0), 
+                    color="#022c5c", alpha=0.15)
+    ax.plot(np.median(sevens, axis=0), color="#034e91", label='7 yearly screening')
+    ax.fill_between(list(range(len(sevens[0]))),
+                    np.percentile(sevens, 25, axis=0), np.percentile(sevens, 75, axis=0), 
+                    color="#034e91", alpha=0.15)
+    ax.plot(np.median(tens, axis=0), color="#5899d1", label='10 yearly screening')
+    ax.fill_between(list(range(len(tens[0]))),
+                    np.percentile(tens, 25, axis=0), np.percentile(tens, 75, axis=0), 
+                    color="#5899d1", alpha=0.15)
+    ax.plot(np.median(fifteens, axis=0), color="#9ccbec", label='15 yearly screening')
+    ax.fill_between(list(range(len(fifteens[0]))),
+                    np.percentile(fifteens, 25, axis=0), np.percentile(fifteens, 75, axis=0), 
+                    color="#9ccbec", alpha=0.15)
+    
+    ax.set_xticks([80+80,120+80,160+80,200+80],[2020,2030,2040,2050])
+    ax.set_xlim(160,280)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.title("True HPV prevalence and observed prevalence rates amongst those screened")
     plt.legend()
     plt.show()
 
-    #Extract lists of seperate infection trajectories for rate over tests
-    trues = []
-    fives = []
-    sevens = []
-    tens = []
-    fifteens = []
+
+def get_missed_infections_curves(seed :int, 
+                                    final_cal_data=None, par_labels=None,
+                                    genotypes = [True, True, True, True],
+                                    sex = [True, False],
+                                    vacc_only = False, unvacc_vacc_elig_only = False, vacc_inelig_only =False
+                                    ):
+    """ 
+    Runs a single HPVsim simulation with {base_pars} and RNG seed {seed}, over each parameterisation defined in {(final_cal_data, par_labels)} for standard interventions (NHS 2025 screening and all vaccination) between 1980 and 2025. 
+    At each timepoint, records the number of individuals who have an active HPV infection or are cancerous, but have not had a positive HPV test in the last 3.5 years (3 years, which is the callback interval for those who most recently were HPV +v2, and a margin for people to be a bit late to appt).
+    Returns missed infections over time for 5,7,10, and 15-yearly screening as well as ground truth infection.
+    
+    Infection prevalence for a given genotype is defined as the percentage of people with the INFECTIOUS or CANCEROUS state for that genotype, to be consistent with what testing could pick up in the real world (as this function is to be used for validation against real-world data).
+
+    seed: RNG seed for simulation
+    final_cal_data: a list of parameter tuples [(v11,v12,...,v1p),...,(vn1,vn2,...,vnp)] where there are p calibrated parameters and n parameterisations. If None, loads in defaults locally.
+    par_labels: the internal HPVsim name for each of the p calibrated parameters, corresponding to the tuple orderings in {final_cal_data}. If None, loads in defaults locally.
+    genotypes: boolean list of 4 elements where ith element is whether we are counting the ith genotype of ["HPV 16", "HPV 18", "HI5", "OHR"] in our HPV prevalence we are recording
+    sex: boolean list of [Whether to include Women in the sum, whether to include men in the sum]
+    percentage: whether to record values as absolute counts of infection or as percentages of population in the age bracket
+    inc_vacc: whether vaccinated individuals should be counted 
+    inc_unvacc_vacc_elig: whether unvaccinated vaccine-eligible individuals should be counted
+    inc_vacc_inelig: whether vaccine-ineligible individuals should be counted
+
+    Returns: {parameterisation number: {5: (xs, ys), 7: (xs, ys), 10: (xs,ys), 15: (xs,ys)}} where in each instance the xs are the true infection prevalences and the ys are the number of missed people
+        NOTE: the xs should not really change with 5,7,10,15 yearly screening intervals, but as I am generating that information anyway, I am returning it so that I can verify this!
+    """
+    from basePars import base_pars
+
+    #Asserting parameter correctness, and loading in default calibration results if needed for model running 
+    assert (final_cal_data is not None and par_labels is not None) or (final_cal_data is None and par_labels is None) #we can't have one parameter without the other, so either define both or define neither (and if neither is defined, we load them in: below)
+    if final_cal_data is None or par_labels is None: 
+        #Load in calibrated parameter sets
+        with open('finalCalibration.pickle', 'rb') as file:
+            loadeddata = pickle.load(file)
+        final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
+        par_labels = loadeddata['par_labels']
+    
+    #Define the variable to store the data we accumulate and then return
+    final_timeseries = {param_number: {5: (None, None), 7: (None, None), 10: (None, None), 15: (None, None)} for param_number in range(len(final_cal_data))}
+
+    #Define function to be used for snapshotting
+    def make_prevalence_logs(sim):
+        if sim.t==0: # At the start of running the sim, we need to store lists in the sim which will record prevalence and observed prevalence at each timepoint
+            sim.positive_tests = {}  #a dict (partial mapping) pid-|->"most recent timepoint at which pid was tested positive for HPV"; if pid is in the domain (keys) with without a 'None' value then the agent has been tested positive
+            sim.true_infections_timeseries = []
+            sim.missed_infections_timeseries = []
+    make_prevalence_logs.label='make_prevalence_logs'
+
+    def prevalence_logger(sim):
+        scale = sim.people.scale
+
+        # find the indices of all people we are interested in
+        relevant_indices = None #this will become a list where relevant_indices[pid] = True iff agent with id pid is part of our population of interest
+        relevant_indices = (sim.people.alive) & (sim.people.age>=24) & (sim.people.age<65) # we only care about prevalence in screening-eligibles
+        for pid in range(sim.n):
+            if not sex[int(sim.people.sex[pid])]:
+                relevant_indices[pid] = False #still need to exclude agents based on sex that we are monotoring over
+        if vacc_only:
+            relevant_indices = relevant_indices & sim.people.vaccinated #nice and simple focussing just on the vaccinated, no loops needed
+        if unvacc_vacc_elig_only:
+            relevant_indices = relevant_indices & (~sim.people.vaccinated) & (sim.people.age <= 0.25*sim.t - 15)
+        if vacc_inelig_only:
+            relevant_indices = relevant_indices & (sim.people.age > 0.25*sim.t - 15)
+
+        # log which agents have been tested positive for HPV this timestep
+        hpv_test_names = ["routine_screening_under50","routine_screening_50andover", "second_consecutive_screening", "third_consecutive_screening"]
+        for name in hpv_test_names:
+            hpv_test = sim.get_intervention(name)
+            positives = list(hpv_test.outcomes['positive'])
+            for pid in positives:
+                if relevant_indices[pid]:
+                    sim.positive_tests[pid] = sim.t #either defines a new entry in this partial mapping from pids to time of most recent +ve test, or overrides it; desired behaviour
+            
+        # clear agents out of memory whose most recent positive test was too long ago
+        for pid in set(sim.positive_tests.keys()): #by wrapping as a set, we are then able to change dictionary size during iteration
+            if sim.positive_tests[pid] < sim.t - 15: #21 timesteps is just over 3 years as dt=0.25 (3 years + a margin for people to be slow to take up followup appt)
+                sim.positive_tests.pop(pid)
+    
+        # for each agent, log whether currently infected and whether this infection has been detected by surveillance
+        total_infectious = 0
+        total_missed = 0
+        for pid in range(sim.n): 
+            if relevant_indices[pid]: #we only care about agents which are part of the subpopulation of interest
+                if np.dot(sim.people.infectious[:,pid], genotypes) + np.dot(sim.people.cancerous[:,pid], genotypes) > 0: #True iff agent is infectious with, or cancerous with, at least one of the genotypes of interest (defined in parameter {genotypes})
+                    total_infectious += scale[pid]
+                    if pid not in sim.positive_tests.keys():
+                        total_missed += scale[pid]
+        if total_infectious == 0:
+            print(f"at time {sim.t}, none infectious") 
+        sim.true_infections_timeseries.append(total_infectious)
+        sim.missed_infections_timeseries.append(total_missed)
+    prevalence_logger.label='prevalence_logger'
+
+
+    #Iterate through the simulations 
+    for interval in [5,7,10,15]:
+        #Set up simulation base parameters
+        base_pars = deepcopy(base_pars)
+        base_pars['interventions'] = [make_prevalence_logs] + screeningAlgorithms.get_interventions(v=interval,u=interval,a=interval) + NHS_Vacc.vaccinations + [prevalence_logger]
+        
+        #Run all the simulations
+        num_params = len(final_cal_data) #number of parameterisations which make up the ensemble model we are using
+        for i in tqdm(range(num_params)):
+            cal_params = final_cal_data[i][0] #specific parametersation of this iteration (note final_cal_data[i] is a tuple (parameterisation tuple, GOF, order statistic of GOF within the calibration that generated it, ID of calibration where the parameterisation was sampled ))
+            tmp_base_pars = deepcopy(base_pars) #make deep copy of provided {base_pars} to add specific calibration parameters and logger to it without changing the original copy passed into this function
+
+            tmp_base_pars['n_agents'] = 20_000 #TODO: remove this once I know the code is working about right
+
+            #Set seed
+            tmp_base_pars['rand_seed'] = seed*num_params + i #this ensures that we give HPVsim a unique random seed for each parameterisation (seed fixed) and for each seed (parameterisation fixed); so no two runs - unless both seed and parameterisation are the same - will have the same HPVsim seed, and therefore we can assume independance 
+
+            #Set non-genotype calibrated parameters to this iteration's parameterisation
+            tmp_base_pars['beta'] = cal_params[par_labels.index('params_beta')]
+            tmp_base_pars['f_cross_layer'] = cal_params[par_labels.index('params_f_cross_layer')]
+            tmp_base_pars['m_cross_layer'] = cal_params[par_labels.index('params_m_cross_layer')]
+
+            #Set up {tmp_base_pars} to allow for specification of genotype parameters
+            tmp_base_pars['genotype_pars'] = sc.objdict() #initialise genotype parameters within hpvsim
+            for g in tmp_base_pars['genotypes']:
+                tmp_base_pars['genotype_pars'][g] = get_genotype_pars(genotype=g)
+
+            #Set genotype calibrated parameters to this iteration's parameterisation
+            tmp_base_pars['genotype_pars']['hpv16']['cin_fn']['k'] = cal_params[par_labels.index('params_hpv16_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hpv16']['dur_cin']['par1'] = cal_params[par_labels.index('params_hpv16_dur_cin_par1')]
+
+            tmp_base_pars['genotype_pars']['hpv18']['cin_fn']['k'] = cal_params[par_labels.index('params_hpv18_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hpv18']['dur_cin']['par1'] = cal_params[par_labels.index('params_hpv18_dur_cin_par1')]
+            
+            tmp_base_pars['genotype_pars']['hi5']['cin_fn']['k'] = cal_params[par_labels.index('params_hi5_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hi5']['dur_cin']['par1'] = cal_params[par_labels.index('params_hi5_dur_cin_par1')]
+            tmp_base_pars['genotype_pars']['hi5']['rel_beta'] = cal_params[par_labels.index('params_hi5_rel_beta')]
+
+            tmp_base_pars['genotype_pars']['ohr']['cin_fn']['k'] = cal_params[par_labels.index('params_ohr_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['ohr']['dur_cin']['par1'] = cal_params[par_labels.index('params_ohr_dur_cin_par1')]
+            tmp_base_pars['genotype_pars']['ohr']['rel_beta'] = cal_params[par_labels.index('params_ohr_rel_beta')]
+
+            #Initialise and run sim itself, and extract logged data
+            sim = hpv.Sim(tmp_base_pars)
+            sim.run()
+            final_timeseries[i][interval] = (sim.true_infections_timeseries, sim.missed_infections_timeseries)
+    return final_timeseries
+
+def plot_missed_infections_curves():
+    seed = 0
+
+    infections_curves = get_missed_infections_curves(seed=seed, 
+                                              vacc_only=False,
+                                              unvacc_vacc_elig_only=False,
+                                              vacc_inelig_only=False,
+                                              )
+
+    #Extract lists of seperate infection trajectories
+    fives_true = [] ; fives_missed = []
+    sevens_true = [] ; sevens_missed = []
+    tens_true = [] ; tens_missed = []
+    fifteens_true = [] ; fifteens_missed = []
     for i in infections_curves.keys():
-        trues.append(smooth_list(infections_curves[i]['true'], 4))#add ground truth there too to have a reference
-        fives.append(smooth_list(rate_over_tests[i][5],4))
-        sevens.append(smooth_list(rate_over_tests[i][7],4))
-        tens.append(smooth_list(rate_over_tests[i][10],4))
-        fifteens.append(smooth_list(rate_over_tests[i][15],4))
-    plt.plot(np.median(trues, axis=0), color="#022c5c", label='ground truth prevalcne')
-    plt.plot(np.median(fives, axis=0), color="#034e91", label='5-yearly screening')
-    plt.plot(np.median(sevens, axis=0), color="#0072b2", label='7-yearly screening')
-    plt.plot(np.median(tens, axis=0), color="#5899d1", label='10-yearly screening')
-    plt.plot(np.median(fifteens, axis=0), color="#9ccbec", label='15-yearly screening')
-    plt.title("UNVACCVACCELIGPOP Proportion of those undergoing regular screening that have a positive test this year. Dont forget to turn 3-yearly screening callbacks to a big number to not inflate with callbacks!! in screeningAlgorithms.py line 97")
+        fives_true.append(smooth_list(infections_curves[i][5][0],4)) #smooth with smoothing width of 4 to do an annual rolling average
+        fives_missed.append(smooth_list(infections_curves[i][5][1],4))
+        sevens_true.append(smooth_list(infections_curves[i][7][0],4))
+        sevens_missed.append(smooth_list(infections_curves[i][7][1],4))
+        tens_true.append(smooth_list(infections_curves[i][10][0],4))
+        tens_missed.append(smooth_list(infections_curves[i][10][1],4))
+        fifteens_true.append(smooth_list(infections_curves[i][15][0],4))
+        fifteens_missed.append(smooth_list(infections_curves[i][15][1],4))
+    
+    _ , ax = plt.subplots(1,1, figsize=(7, 5))
+    ax.plot(np.median(fives_true, axis=0), color="black", linestyle='dotted', label='ground truth prevalence')
+    ax.fill_between(list(range(len(fives_true[0]))),
+                    np.percentile(fives_true, 25, axis=0), np.percentile(fives_true, 75, axis=0), 
+                    color="black", alpha=0.15)
+    #plt.plot(np.median(sevens_true, axis=0), color="#034e91",linestyle='dotted')
+    #plt.plot(np.median(tens_true, axis=0), color="#5899d1",linestyle='dotted',)
+    #plt.plot(np.median(fifteens_true, axis=0), color="#9ccbec",linestyle='dotted',)
+    
+    ax.plot(np.median(fives_missed, axis=0), color="#022c5c", label='5 yearly screening')
+    ax.fill_between(list(range(len(fives_missed[0]))),
+                    np.percentile(fives_missed, 25, axis=0), np.percentile(fives_missed, 75, axis=0), 
+                    color="#022c5c", alpha=0.15)
+
+    ax.plot(np.median(sevens_missed, axis=0), color="#034e91", label='7 yearly screening')
+    ax.fill_between(list(range(len(sevens_missed[0]))),
+                    np.percentile(sevens_missed, 25, axis=0), np.percentile(sevens_missed, 75, axis=0), 
+                    color="#034e91", alpha=0.15)
+    
+    ax.plot(np.median(tens_missed, axis=0), color="#5899d1", label='10 yearly screening')
+    ax.fill_between(list(range(len(tens_missed[0]))),
+                    np.percentile(tens_missed, 25, axis=0), np.percentile(tens_missed, 75, axis=0), 
+                    color="#5899d1", alpha=0.15)
+    
+    ax.plot(np.median(fifteens_missed, axis=0), color="#9ccbec", label='15 yearly screening')
+    ax.fill_between(list(range(len(fifteens_missed[0]))),
+                    np.percentile(fifteens_missed, 25, axis=0), np.percentile(fifteens_missed, 75, axis=0), 
+                    color="#9ccbec", alpha=0.15)
+    
+
+    ax.set_xticks([80+80,120+80,160+80,200+80],[2020,2030,2040,2050])
+    ax.set_xlim(160,280)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.title("True HPV prevalence and number of individuals whose prevalence is not captured by screening")
     plt.legend()
     plt.show()
 
@@ -2238,8 +2388,12 @@ def fig3_timeseries_helper(data_name,
 
 
 if __name__=="__main__":
-    #plot_observed_infections_curves()
+    plot_observed_infections_curves()
+    quit()
+
+    #plot_missed_infections_curves()
     #quit()
+
     """
     ttest_powerplot(plt.subplots(1,1)[1],
                     4,

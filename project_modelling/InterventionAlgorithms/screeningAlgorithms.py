@@ -94,12 +94,15 @@ update_needs_consec_screening_3.label="update_needs_consec_screening_3"
 def routine_screen_eligible_under50(sim,
                                     v, u, a,
                                     switch_year, 
-                                    shorter_interval = 30000000 
+                                    shorter_interval = 3000000000 
                                     ):
     '''
     Returns a Boolean np.array length {n}(:= number of agents at current time, {sim.t}). ith entry is True iff individual with pid==i is screen-eligible
     The screening intervention for under-50s is different to the screening intervention for over-50s (to allow for different uptake probabilities); this is only for eligibilitg for under-50 screenings.
     '''
+    if sim.t==0 and shorter_interval!=3:
+        print(f"WARNING!!!! Shorter screening callback interval for those whose previous HPV test was +ve is set to {shorter_interval}, not 3.")
+
     eligible = np.copy(sim.people.is_female_alive) #elgibility starts by only applying to living women
     eligible = eligible & (sim.people.age>=24) & (sim.people.age<50) #filter to ages applicable to this intervention
 
