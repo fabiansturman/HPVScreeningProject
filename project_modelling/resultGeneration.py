@@ -806,7 +806,6 @@ def get_infections_curves( seed:int,
         final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
         par_labels = loadeddata['par_labels']
 
-
     #Define the variable to store the data we accumulate and then return
     final_timeseries = {param_number: {'true': None, 5: None, 7: None, 10: None, 15: None} for param_number in range(len(final_cal_data))}
 
@@ -881,7 +880,6 @@ def get_infections_curves( seed:int,
             cal_params = final_cal_data[i][0] #specific parametersation of this iteration (note final_cal_data[i] is a tuple (parameterisation tuple, GOF, order statistic of GOF within the calibration that generated it, ID of calibration where the parameterisation was sampled ))
             tmp_base_pars = deepcopy(base_pars) #make deep copy of provided {base_pars} to add specific calibration parameters and logger to it without changing the original copy passed into this function
 
-            tmp_base_pars['n_agents'] = 20_000 #TODO: remove this once I know the code is working about right
 
 
             #Set seed
@@ -945,26 +943,26 @@ def plot_observed_infections_curves():
         fifteens.append(smooth_list(infections_curves[i][15],12))
     
     _ , ax = plt.subplots(1,1, figsize=(7, 5))
-    ax.plot(np.median(trues, axis=0), color="black", linestyle='dotted', label='ground truth prevalence')
+    ax.plot(np.median(trues, axis=0), color="black", linestyle='dotted', label='Underlying Prevalence')
     ax.fill_between(list(range(len(trues[0]))),
                     np.percentile(trues, 25, axis=0), np.percentile(trues, 75, axis=0), 
-                    color="black", alpha=0.15)
-    ax.plot(np.median(fives, axis=0), color="#022c5c", label='5 yearly screening')
+                    color="black", alpha=0.07)
+    ax.plot(np.median(fives, axis=0), color="#022c5c", label='Detected Prevalence: 5-yearly')
     ax.fill_between(list(range(len(fives[0]))),
                     np.percentile(fives, 25, axis=0), np.percentile(fives, 75, axis=0), 
-                    color="#022c5c", alpha=0.15)
-    ax.plot(np.median(sevens, axis=0), color="#034e91", label='7 yearly screening')
+                    color="#022c5c", alpha=0.07)
+    ax.plot(np.median(sevens, axis=0), color="#034e91", label='Detected Prevalence: 7-yearly')
     ax.fill_between(list(range(len(sevens[0]))),
                     np.percentile(sevens, 25, axis=0), np.percentile(sevens, 75, axis=0), 
-                    color="#034e91", alpha=0.15)
-    ax.plot(np.median(tens, axis=0), color="#5899d1", label='10 yearly screening')
+                    color="#034e91", alpha=0.07)
+    ax.plot(np.median(tens, axis=0), color="#5899d1", label='Detected Prevalence: 10-yearly')
     ax.fill_between(list(range(len(tens[0]))),
                     np.percentile(tens, 25, axis=0), np.percentile(tens, 75, axis=0), 
-                    color="#5899d1", alpha=0.15)
-    ax.plot(np.median(fifteens, axis=0), color="#9ccbec", label='15 yearly screening')
+                    color="#5899d1", alpha=0.07)
+    ax.plot(np.median(fifteens, axis=0), color="#9ccbec", label='Detected Prevalence: 15-yearly')
     ax.fill_between(list(range(len(fifteens[0]))),
                     np.percentile(fifteens, 25, axis=0), np.percentile(fifteens, 75, axis=0), 
-                    color="#9ccbec", alpha=0.15)
+                    color="#9ccbec", alpha=0.07)
     
     ax.set_xticks([80+80,120+80,160+80,200+80],[2020,2030,2040,2050])
     ax.set_xlim(160,280)
@@ -1081,7 +1079,6 @@ def get_missed_infections_curves(seed :int,
             cal_params = final_cal_data[i][0] #specific parametersation of this iteration (note final_cal_data[i] is a tuple (parameterisation tuple, GOF, order statistic of GOF within the calibration that generated it, ID of calibration where the parameterisation was sampled ))
             tmp_base_pars = deepcopy(base_pars) #make deep copy of provided {base_pars} to add specific calibration parameters and logger to it without changing the original copy passed into this function
 
-            tmp_base_pars['n_agents'] = 20_000 #TODO: remove this once I know the code is working about right
 
             #Set seed
             tmp_base_pars['rand_seed'] = seed*num_params + i #this ensures that we give HPVsim a unique random seed for each parameterisation (seed fixed) and for each seed (parameterisation fixed); so no two runs - unless both seed and parameterisation are the same - will have the same HPVsim seed, and therefore we can assume independance 
@@ -1142,33 +1139,29 @@ def plot_missed_infections_curves():
         fifteens_missed.append(smooth_list(infections_curves[i][15][1],4))
     
     _ , ax = plt.subplots(1,1, figsize=(7, 5))
-    ax.plot(np.median(fives_true, axis=0), color="black", linestyle='dotted', label='ground truth prevalence')
+    ax.plot(np.median(fives_true, axis=0), color="black", linestyle='dotted', label='Underlying Prevalence')
     ax.fill_between(list(range(len(fives_true[0]))),
                     np.percentile(fives_true, 25, axis=0), np.percentile(fives_true, 75, axis=0), 
-                    color="black", alpha=0.15)
+                    color="black", alpha=0.07)
     #plt.plot(np.median(sevens_true, axis=0), color="#034e91",linestyle='dotted')
     #plt.plot(np.median(tens_true, axis=0), color="#5899d1",linestyle='dotted',)
     #plt.plot(np.median(fifteens_true, axis=0), color="#9ccbec",linestyle='dotted',)
-    
-    ax.plot(np.median(fives_missed, axis=0), color="#022c5c", label='5 yearly screening')
+    ax.plot(np.median(fives_missed, axis=0), color="#022c5c", label='Detected Prevalence: 5-yearly')
     ax.fill_between(list(range(len(fives_missed[0]))),
                     np.percentile(fives_missed, 25, axis=0), np.percentile(fives_missed, 75, axis=0), 
-                    color="#022c5c", alpha=0.15)
-
-    ax.plot(np.median(sevens_missed, axis=0), color="#034e91", label='7 yearly screening')
+                    color="#022c5c", alpha=0.07)
+    ax.plot(np.median(sevens_missed, axis=0), color="#034e91", label='Detected Prevalence: 7-yearly')
     ax.fill_between(list(range(len(sevens_missed[0]))),
                     np.percentile(sevens_missed, 25, axis=0), np.percentile(sevens_missed, 75, axis=0), 
-                    color="#034e91", alpha=0.15)
-    
-    ax.plot(np.median(tens_missed, axis=0), color="#5899d1", label='10 yearly screening')
+                    color="#034e91", alpha=0.07)
+    ax.plot(np.median(tens_missed, axis=0), color="#5899d1", label='Detected Prevalence: 10-yearly')
     ax.fill_between(list(range(len(tens_missed[0]))),
                     np.percentile(tens_missed, 25, axis=0), np.percentile(tens_missed, 75, axis=0), 
-                    color="#5899d1", alpha=0.15)
-    
-    ax.plot(np.median(fifteens_missed, axis=0), color="#9ccbec", label='15 yearly screening')
+                    color="#5899d1", alpha=0.07)
+    ax.plot(np.median(fifteens_missed, axis=0), color="#9ccbec", label='Detected Prevalence: 15-yearly')
     ax.fill_between(list(range(len(fifteens_missed[0]))),
                     np.percentile(fifteens_missed, 25, axis=0), np.percentile(fifteens_missed, 75, axis=0), 
-                    color="#9ccbec", alpha=0.15)
+                    color="#9ccbec", alpha=0.07)
     
 
     ax.set_xticks([80+80,120+80,160+80,200+80],[2020,2030,2040,2050])
@@ -2388,8 +2381,8 @@ def fig3_timeseries_helper(data_name,
 
 
 if __name__=="__main__":
-    plot_observed_infections_curves()
-    quit()
+    #plot_observed_infections_curves()
+    #quit()
 
     #plot_missed_infections_curves()
     #quit()
@@ -2408,7 +2401,7 @@ if __name__=="__main__":
     #"""
     #Uncomment this block of code to get code which gets the specific values referred to in the abstract/results section
     algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
-    algs_to_plot = ['V10U7A5', 'V15U10A5']
+    algs_to_plot = ['V5U5A5','V10U7A5', 'V15U10A5']
     for i in range(len(algs_to_plot)):
         algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
 
@@ -2420,28 +2413,37 @@ if __name__=="__main__":
 
     #prev_cancers_ud5y_fullpop_alltypes
     #inc_cancers_fullpop_alltypes
+    #240-243 inclusive for totals in 2040
+    #280-283 inclsuive for totals in 2050
 
     print("1")
-    fig, ax = plt.subplots(1,1,figsize=(7, 5))
-    plot_quant_over_time(ax, 'prev_cancers_ud5y_fullpop_alltypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds, 
-                         #show_quartiles=True, #gets us to use mean not median
-                         print_tp = 160+80)
-
+    simple_totals = get_simple_totals('prev_cancers_ud5y_fullpop_alltypes', start_tp = 240, end_tp=243, 
+                        normalise_per_100k=True, algs=algs_to_plot,
+                        accepted_paramandseeds = accepted_paramseeds)
+    for alg in simple_totals.keys():
+        print(f"Mean: {np.mean(simple_totals[alg])} \n\t std: {np.std(simple_totals[alg], ddof=1)} \n\t Median: {np.median(simple_totals[alg])}")
+    
     print("2")
-    fig, ax = plt.subplots(1,1,figsize=(7, 5))
-    plot_quant_over_time(ax, 'prev_cancers_ud5y_fullpop_alltypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds, #prev_cancers_ud5y_fullpop_alltypes
-                         print_tp = 200+80)
+    simple_totals = get_simple_totals('prev_cancers_ud5y_fullpop_alltypes', start_tp = 280, end_tp=283, 
+                        normalise_per_100k=True, algs=algs_to_plot,
+                        accepted_paramandseeds = accepted_paramseeds)
+    for alg in simple_totals.keys():
+        print(f"Mean: {np.mean(simple_totals[alg])} \n\t std: {np.std(simple_totals[alg], ddof=1)} \n\t Median: {np.median(simple_totals[alg])}")
     
     print("3")
-    fig, ax = plt.subplots(1,1,figsize=(7, 5))
-    plot_quant_over_time(ax, 'inc_cancers_fullpop_alltypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds, 
-                         #show_quartiles=True, #gets us to use mean not median
-                         print_tp = 160+80)
-
+    simple_totals = get_simple_totals('inc_cancers_fullpop_alltypes', start_tp = 240, end_tp=243, 
+                        normalise_per_100k=True, algs=algs_to_plot,
+                        accepted_paramandseeds = accepted_paramseeds)
+    for alg in simple_totals.keys():
+        print(f"Mean: {np.mean(simple_totals[alg])} \n\t std: {np.std(simple_totals[alg], ddof=1)} \n\t Median: {np.median(simple_totals[alg])}")
+    
     print("4")
-    fig, ax = plt.subplots(1,1,figsize=(7, 5))
-    plot_quant_over_time(ax, 'inc_cancers_fullpop_alltypes', True, algs_to_plot, accepted_paramandseeds=accepted_paramseeds, 
-                         print_tp = 200+80)
+    simple_totals = get_simple_totals('inc_cancers_fullpop_alltypes', start_tp = 280, end_tp=283, 
+                        normalise_per_100k=True, algs=algs_to_plot,
+                        accepted_paramandseeds = accepted_paramseeds)
+    for alg in simple_totals.keys():
+        print(f"Mean: {np.mean(simple_totals[alg])} \n\t std: {np.std(simple_totals[alg], ddof=1)} \n\t Median: {np.median(simple_totals[alg])}")
+    
 
     
     #"""

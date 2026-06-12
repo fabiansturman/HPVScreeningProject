@@ -94,7 +94,7 @@ update_needs_consec_screening_3.label="update_needs_consec_screening_3"
 def routine_screen_eligible_under50(sim,
                                     v, u, a,
                                     switch_year, 
-                                    shorter_interval = 3000000000 
+                                    shorter_interval = 3#3000000000 
                                     ):
     '''
     Returns a Boolean np.array length {n}(:= number of agents at current time, {sim.t}). ith entry is True iff individual with pid==i is screen-eligible
