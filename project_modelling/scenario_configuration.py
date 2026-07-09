@@ -8,8 +8,8 @@ from InterventionAlgorithms import screeningAlgorithms, NHS_Vacc, GlobalScreenin
 
 
 ##THE FOLLOWING MAY BE CHANGED TO SET DIFFERENT INTERVENTIONS##
-screening_algorithm_stub_name = 'V_U_A_' #set the name we will be using for screening algorithms
-screening_algorithm = screeningAlgorithms.get_interventions(v=0,u=0,a=0)
+screening_algorithm_stub_name = 'V15U10A5' #set the name we will be using for screening algorithms
+screening_algorithm = screeningAlgorithms.get_interventions(v=15,u=10,a=5)
 """                                                         ^
                                                             v = screening interval for vaccinated individuals
                                                             u = screening interval for unvaccinated vaccine-elgiible individuals

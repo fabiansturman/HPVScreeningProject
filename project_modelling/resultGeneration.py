@@ -61,6 +61,9 @@ import pickle
 from copy import deepcopy
 from tqdm import tqdm
 
+from math import sqrt
+
+
 import hpvsim as hpv
 from hpvsim.parameters import get_genotype_pars
 from basePars import base_pars
@@ -75,6 +78,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from colorScheme import natureColorScheme
+
+from scenario_configuration import scenario_code, cal_filename
 
 
 
@@ -160,13 +165,38 @@ colors_by_algorithm_stem = {
     'V_U_A_':natureColorScheme['reds'][5],
 }
 
+colors_by_algorithm_interval = {
+    (5,5,5):natureColorScheme['reds'][1],
+    (7,5,5):natureColorScheme['greens'][1],    
+    (10,5,5):natureColorScheme['greens'][2],      
+    (15,5,5):natureColorScheme['greens'][3],  
+    (0,5,5):natureColorScheme['greens'][4],
+                                                    
+    (10,7,5):natureColorScheme['blues'][1], 
+                                                                    
+    (15,10,5):natureColorScheme['blues'][-2],   
+    
+    (7,7,5):natureColorScheme['yellows'][1],    
+    (10,10,5):natureColorScheme['yellows'][2],     
+    (15,15,5):natureColorScheme['yellows'][3], 
+    (0,0,5):natureColorScheme['yellows'][4],
+                                                    
+    (10,10,10):natureColorScheme['reds'][3],
+}
+
 
 
 #Logically, we make 'algorithms' and 'scenarios' equivalent - which is justified by broadening the definition of 'algorithm' to refer to the full parameterisation of a HPVsim instance as opposed to just referring to the screening algorithm
 # defining the codes that denote our different sensitivity analyses
 vacc_cases = ['_6', '_8', '_9'] #these are the codes denoting 60%, 80%, and 90% teen vaccine uptake, respectively
 cal_cases = { #this dictionary gives the different sensitivity analyses we have considered (other than sensitivity analysis over vaccination levels)
-    'BASE': '_8_68_76_55_55_9_9__96_7_13', #this suffix to resultfile names means we are dealing with the base case of all our parameters
+    'S0': '_8_68_76_55_55_9_9__96_7_13', #this suffix to resultfile names means we are dealing with the base case of all our parameters
+    'S1': '_65_68_76_55_55_9_9__96_7_13',
+    'S2': '_8_68_76_36_36_8_8__96_7_13',
+    'S3': '_8_8_8_68_68_95_95__96_7_13',
+    'S4': '_8_68_76_55_55_9_9_1_96_7_13',
+    'S5': '_8_68_76_55_55_9_9__96_7_62',
+    'S6': '_8_68_76_55_55_9_9__9_85_13'
 }
 
 # define the algorithms that we could load in pickle files for (i.e. cartesian product between the screening_algorithm_stems available, the vaccination cases available, and the sensivity analyses we are doing)
@@ -662,7 +692,8 @@ def run_sim_and_get_infection_histogram(seed:int,
     assert (final_cal_data is not None and par_labels is not None) or (final_cal_data is None and par_labels is None) #we can't have one parameter without the other, so either define both or define neither (and if neither is defined, we load them in: below)
     if final_cal_data is None or par_labels is None: 
         #Load in calibrated parameter sets
-        with open('finalCalibration.pickle', 'rb') as file:
+        print(f"We are dealing with calibration filename {cal_filename}")
+        with open(cal_filename, 'rb') as file:
             loadeddata = pickle.load(file)
         final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
         par_labels = loadeddata['par_labels']
@@ -801,7 +832,8 @@ def get_infections_curves( seed:int,
     assert (final_cal_data is not None and par_labels is not None) or (final_cal_data is None and par_labels is None) #we can't have one parameter without the other, so either define both or define neither (and if neither is defined, we load them in: below)
     if final_cal_data is None or par_labels is None: 
         #Load in calibrated parameter sets
-        with open('finalCalibration.pickle', 'rb') as file:
+        print(f"We are dealing with calibration filename {cal_filename}")
+        with open(cal_filename, 'rb') as file:
             loadeddata = pickle.load(file)
         final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
         par_labels = loadeddata['par_labels']
@@ -1005,7 +1037,8 @@ def get_missed_infections_curves(seed :int,
     assert (final_cal_data is not None and par_labels is not None) or (final_cal_data is None and par_labels is None) #we can't have one parameter without the other, so either define both or define neither (and if neither is defined, we load them in: below)
     if final_cal_data is None or par_labels is None: 
         #Load in calibrated parameter sets
-        with open('finalCalibration.pickle', 'rb') as file:
+        print(f"We are dealing with calibration filename {cal_filename}")
+        with open(cal_filename, 'rb') as file:
             loadeddata = pickle.load(file)
         final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
         par_labels = loadeddata['par_labels']
@@ -1071,7 +1104,9 @@ def get_missed_infections_curves(seed :int,
     for interval in [5,7,10,15]:
         #Set up simulation base parameters
         base_pars = deepcopy(base_pars)
-        base_pars['interventions'] = [make_prevalence_logs] + screeningAlgorithms.get_interventions(v=interval,u=interval,a=interval) + NHS_Vacc.vaccinations + [prevalence_logger]
+        #base_pars['interventions'] = [make_prevalence_logs] + screeningAlgorithms.get_interventions(v=interval,u=interval,a=interval) + NHS_Vacc.vaccinations + [prevalence_logger]
+        base_pars['interventions'] = [make_prevalence_logs] + screeningAlgorithms.get_interventions(v=interval,u=interval,a=5) + NHS_Vacc.vaccinations + [prevalence_logger]
+
         
         #Run all the simulations
         num_params = len(final_cal_data) #number of parameterisations which make up the ensemble model we are using
@@ -1143,37 +1178,443 @@ def plot_missed_infections_curves():
     ax.fill_between(list(range(len(fives_true[0]))),
                     np.percentile(fives_true, 25, axis=0), np.percentile(fives_true, 75, axis=0), 
                     color="black", alpha=0.07)
+    print(f"Trues at 2040: median={np.median(fives_true, axis=0)[160+80]}, LQ={np.percentile(fives_true, 25, axis=0)[160+80]}, UQ={np.percentile(fives_true, 75, axis=0)[160+80]}")
+    print(f"Trues at 2050: median={np.median(fives_true, axis=0)[200+80]}, LQ={np.percentile(fives_true, 25, axis=0)[200+80]}, UQ={np.percentile(fives_true, 75, axis=0)[200+80]}")
+
     #plt.plot(np.median(sevens_true, axis=0), color="#034e91",linestyle='dotted')
     #plt.plot(np.median(tens_true, axis=0), color="#5899d1",linestyle='dotted',)
     #plt.plot(np.median(fifteens_true, axis=0), color="#9ccbec",linestyle='dotted',)
-    ax.plot(np.median(fives_missed, axis=0), color="#022c5c", label='Detected Prevalence: 5-yearly')
+
+    ax.plot(np.median(fives_missed, axis=0), color="#022c5c", label='Missed Prevalence: 5-yearly')
     ax.fill_between(list(range(len(fives_missed[0]))),
                     np.percentile(fives_missed, 25, axis=0), np.percentile(fives_missed, 75, axis=0), 
                     color="#022c5c", alpha=0.07)
-    ax.plot(np.median(sevens_missed, axis=0), color="#034e91", label='Detected Prevalence: 7-yearly')
+    print(f"Fives at 2040: median={np.median(fives_missed, axis=0)[160+80]}, LQ={np.percentile(fives_missed, 25, axis=0)[160+80]}, UQ={np.percentile(fives_missed, 75, axis=0)[160+80]}")
+    print(f"Fives at 2050: median={np.median(fives_missed, axis=0)[200+80]}, LQ={np.percentile(fives_missed, 25, axis=0)[200+80]}, UQ={np.percentile(fives_missed, 75, axis=0)[200+80]}")
+
+    ax.plot(np.median(sevens_missed, axis=0), color="#034e91", label='Missed Prevalence: 7-yearly')
     ax.fill_between(list(range(len(sevens_missed[0]))),
                     np.percentile(sevens_missed, 25, axis=0), np.percentile(sevens_missed, 75, axis=0), 
                     color="#034e91", alpha=0.07)
-    ax.plot(np.median(tens_missed, axis=0), color="#5899d1", label='Detected Prevalence: 10-yearly')
+    print(f"Sevens at 2040: median={np.median(sevens_missed, axis=0)[160+80]}, LQ={np.percentile(sevens_missed, 25, axis=0)[160+80]}, UQ={np.percentile(sevens_missed, 75, axis=0)[160+80]}")
+    print(f"Sevens at 2050: median={np.median(sevens_missed, axis=0)[200+80]}, LQ={np.percentile(sevens_missed, 25, axis=0)[200+80]}, UQ={np.percentile(sevens_missed, 75, axis=0)[200+80]}")
+
+    ax.plot(np.median(tens_missed, axis=0), color="#5899d1", label='Missed Prevalence: 10-yearly')
     ax.fill_between(list(range(len(tens_missed[0]))),
                     np.percentile(tens_missed, 25, axis=0), np.percentile(tens_missed, 75, axis=0), 
                     color="#5899d1", alpha=0.07)
-    ax.plot(np.median(fifteens_missed, axis=0), color="#9ccbec", label='Detected Prevalence: 15-yearly')
+    print(f"Tens at 2040: median={np.median(tens_missed, axis=0)[160+80]}, LQ={np.percentile(tens_missed, 25, axis=0)[160+80]}, UQ={np.percentile(tens_missed, 75, axis=0)[160+80]}")
+    print(f"Tens at 2050: median={np.median(tens_missed, axis=0)[200+80]}, LQ={np.percentile(tens_missed, 25, axis=0)[200+80]}, UQ={np.percentile(tens_missed, 75, axis=0)[200+80]}")
+
+    ax.plot(np.median(fifteens_missed, axis=0), color="#9ccbec", label='Missed Prevalence: 15-yearly')
     ax.fill_between(list(range(len(fifteens_missed[0]))),
                     np.percentile(fifteens_missed, 25, axis=0), np.percentile(fifteens_missed, 75, axis=0), 
                     color="#9ccbec", alpha=0.07)
+    print(f"Fifteens at 2040: median={np.median(fifteens_missed, axis=0)[160+80]}, LQ={np.percentile(fifteens_missed, 25, axis=0)[160+80]}, UQ={np.percentile(fifteens_missed, 75, axis=0)[160+80]}")
+    print(f"Fifteens at 2050: median={np.median(fifteens_missed, axis=0)[200+80]}, LQ={np.percentile(fifteens_missed, 25, axis=0)[200+80]}, UQ={np.percentile(fifteens_missed, 75, axis=0)[200+80]}")
+
     
 
     ax.set_xticks([80+80,120+80,160+80,200+80],[2020,2030,2040,2050])
     ax.set_xlim(160,280)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    plt.title("True HPV prevalence and number of individuals whose prevalence is not captured by screening")
+    plt.title("True HPV prevalence and number of individuals whose prevalence is not captured by screening, intervals are cohort-dependant. ")
+    #NOTE: the title above should correspond to the sort of intervals (uniform, vacc dependant, cohort dependant, or hybrid) that I have hard-coded into get_missed_infections_curves
     plt.legend()
     plt.show()
 
 
-###- (4) UTILITY FUNCTIONALITY -###    
+#TODO: based on which plots I end up using, I think i should delete eitehr the two functions above this comment or the two functions below this comment, to simplify this file!
+def get_missed_infections_and_cancers_curves_all_algs(seed :int, 
+                                    final_cal_data=None, par_labels=None,
+                                    genotypes = [True, True, True, True],
+                                    sex = [True, False],
+                                    vacc_only = False, unvacc_vacc_elig_only = False, vacc_inelig_only =False,
+                                    alg_intervals = [(5,5,5), #this is for a baseline
+                                                     (10,5,5), #this is because we suggest this is a good alg
+                                                     (7,7,5), #this is because we suggest this is a good alg
+                                                     (10,7,5), #this is because we suggest this is a good alg
+                                                     (15,15,5), #this is to give an example of what happens with an alg which is bad in terms of cancers - is it also bad in missed infections?
+                                                     (10,10,10) #this is a bad alg which is also bad with missed infections
+                                                     ]
+                                    ):
+    """ 
+    Runs a single HPVsim simulation with {base_pars} and RNG seed {seed}, over each parameterisation defined in {(final_cal_data, par_labels)} for standard interventions (NHS 2025 screening and all vaccination) between 1980 and 2025. 
+    At each timepoint, records the number of individuals who have an active HPV infection or are cancerous, but have not had a positive HPV test in the last 3.5 years (3 years, which is the callback interval for those who most recently were HPV +v2, and a margin for people to be a bit late to appt).
+    Returns missed infections over time for each screening algorithm as defined in (alg_intervals) as well as ground truth infection.
+    
+    Infection prevalence for a given genotype is defined as the percentage of people with the INFECTIOUS or CANCEROUS state for that genotype, to be consistent with what testing could pick up in the real world (as this function is to be used for validation against real-world data).
+
+    seed: RNG seed for simulation
+    final_cal_data: a list of parameter tuples [(v11,v12,...,v1p),...,(vn1,vn2,...,vnp)] where there are p calibrated parameters and n parameterisations. If None, loads in defaults locally.
+    par_labels: the internal HPVsim name for each of the p calibrated parameters, corresponding to the tuple orderings in {final_cal_data}. If None, loads in defaults locally.
+    genotypes: boolean list of 4 elements where ith element is whether we are counting the ith genotype of ["HPV 16", "HPV 18", "HI5", "OHR"] in our HPV prevalence we are recording
+    sex: boolean list of [Whether to include Women in the sum, whether to include men in the sum]
+    percentage: whether to record values as absolute counts of infection or as percentages of population in the age bracket
+    inc_vacc: whether vaccinated individuals should be counted 
+    inc_unvacc_vacc_elig: whether unvaccinated vaccine-eligible individuals should be counted
+    inc_vacc_inelig: whether vaccine-ineligible individuals should be counted
+    alg_intervals: each element (x,y,z) corresponds to VxUyAz being an algorithm we are modelling when running this function
+
+    
+    returns dict s.t. dict[parameterisation index][(x,y,z)] = (as, bs, cs, ds) 
+                                                                            where for algorithm V{x}U{y}A{z}, 
+                                                                                            (as,bs,cs,ds) = 
+                                                                                                (true_infections_timeseries, 
+                                                                                                missed_infections_timeseries,
+                                                                                                true_cancers_timeseries, 
+                                                                                                missed_cancers_timeseries )
+    """
+    from basePars import base_pars
+
+    #Asserting parameter correctness, and loading in default calibration results if needed for model running 
+    assert (final_cal_data is not None and par_labels is not None) or (final_cal_data is None and par_labels is None) #we can't have one parameter without the other, so either define both or define neither (and if neither is defined, we load them in: below)
+    if final_cal_data is None or par_labels is None: 
+        #Load in calibrated parameter sets
+        print(f"We are dealing with calibration filename {cal_filename}")
+        with open(cal_filename, 'rb') as file: #loads in the calibration file specifically for the configuration we have set up for our model
+            loadeddata = pickle.load(file)
+        final_cal_data = loadeddata['final_cal_data'] #this is a list of parameter-tuples, so has a fixed ordering
+        par_labels = loadeddata['par_labels']
+    
+    #Define the variable to store the data we accumulate and then return
+    final_timeseries = {param_number: {alg_number: (None, None, None, None) for alg_number in range(len(alg_intervals))} for param_number in range(len(final_cal_data))} 
+        #^ final_timeseries[param_number][alg_number] = (true infections at each timestep, missed infections at each timestep, true cancers at each timestep, missed cancers at each timestep)
+
+    #Define function to be used for snapshotting
+    def make_prevalence_logs(sim):
+        if sim.t==0: # At the start of running the sim, we need to store lists in the sim which will record prevalence and observed prevalence at each timepoint
+            sim.positive_tests = {}  #a dict (partial mapping) pid-|->"most recent timepoint at which pid was tested positive for HPV"; if pid is in the domain (keys) with without a 'None' value then the agent has been tested positive
+            sim.cancer_diagnoses = set() #a set of all pids who are living and have been diagosed with cancer. We don't have a 'memory' here as we assume anyone diagnosed with cancer receieves adequate care and followup afterwards (and HPVsim currently doesnt model post-cancer-diagnosis with that much detail)
+            sim.true_infections_timeseries = []
+            sim.missed_infections_timeseries = []
+            sim.true_cancers_timeseries = []
+            sim.missed_cancers_timeseries = []
+    make_prevalence_logs.label='make_prevalence_logs'
+
+    def prevalence_logger(sim):
+        scale = sim.people.scale
+
+        # find the indices of all people we are interested in
+        relevant_indices = None #this will become a list where relevant_indices[pid] = True iff agent with id pid is part of our population of interest
+        relevant_indices = (sim.people.alive) & (sim.people.age>=24) & (sim.people.age<65) # we only care about prevalence in screening-eligibles
+        for pid in range(sim.n):
+            if not sex[int(sim.people.sex[pid])]:
+                relevant_indices[pid] = False #still need to exclude agents based on sex that we are monotoring over
+        if vacc_only:
+            relevant_indices = relevant_indices & sim.people.vaccinated #nice and simple focussing just on the vaccinated, no loops needed
+        if unvacc_vacc_elig_only:
+            relevant_indices = relevant_indices & (~sim.people.vaccinated) & (sim.people.age <= 0.25*sim.t - 15)
+        if vacc_inelig_only:
+            relevant_indices = relevant_indices & (sim.people.age > 0.25*sim.t - 15)
+
+        #INFECTIONS
+        # log which agents have been tested positive for HPV this timestep
+        hpv_test_names = ["routine_screening_under50","routine_screening_50andover", "second_consecutive_screening", "third_consecutive_screening"]
+        for name in hpv_test_names:
+            hpv_test = sim.get_intervention(name)
+            positives = list(hpv_test.outcomes['positive'])
+            for pid in positives:
+                if relevant_indices[pid]:
+                    sim.positive_tests[pid] = sim.t #either defines a new entry in this partial mapping from pids to time of most recent +ve test, or overrides it; desired behaviour
+            
+        # clear agents out of memory whose most recent positive test was too long ago
+        for pid in set(sim.positive_tests.keys()): #by wrapping as a set, we are then able to change dictionary size during iteration
+            if sim.positive_tests[pid] < sim.t - 15: #21 timesteps is just over 3 years as dt=0.25 (3 years + a margin for people to be slow to take up followup appt)
+                sim.positive_tests.pop(pid)
+    
+        # for each agent, log whether currently infected and whether this infection has been detected by surveillance
+        total_infectious = 0
+        total_missed = 0
+        for pid in range(sim.n): 
+            if relevant_indices[pid]: #we only care about agents which are part of the subpopulation of interest
+                if np.dot(sim.people.infectious[:,pid], genotypes) + np.dot(sim.people.cancerous[:,pid], genotypes) > 0: #True iff agent is infectious with, or cancerous with, at least one of the genotypes of interest (defined in parameter {genotypes})
+                    total_infectious += scale[pid]
+                    if pid not in sim.positive_tests.keys():
+                        total_missed += scale[pid]
+        sim.true_infections_timeseries.append(total_infectious)
+        sim.missed_infections_timeseries.append(total_missed)
+
+        #CANCERS
+        # log which agents have been tested positive for cancer this timestep
+        cancer_test = sim.get_intervention("colposcopy")
+        cancer_detections = list(cancer_test.outcomes['cancer'])
+        for pid in cancer_detections:
+            if relevant_indices[pid]:
+                sim.cancer_diagnoses.add(pid) #either defines a new entry in this partial mapping from pids to time of most recent +ve test, or overrides it; desired behaviour
+        
+        # remove pids of agents who are no longer alive from sim.cancer_diagnoses to save some memory
+        for pid in set(sim.cancer_diagnoses): #construct new set of the same values, so we can remove values safely from the initial set during iteration
+            if not sim.people.alive[pid]:
+                sim.cancer_diagnoses.remove(pid)
+
+        # for each agent, log whether they have cancer and whether this has been diagnosed 
+        total_cancerous = 0
+        total_missed_cancers = 0
+        for pid in range(sim.n): 
+            if relevant_indices[pid]: #we only care about agents which are part of the subpopulation of interest
+                if np.dot(sim.people.cancerous[:,pid], genotypes) > 0: #True iff agent is cancerous with at least one of the genotypes of interest (defined in parameter {genotypes})
+                    total_cancerous += scale[pid]
+                    if pid not in sim.cancer_diagnoses:
+                        total_missed_cancers += scale[pid]
+        sim.true_cancers_timeseries.append(total_cancerous)
+        sim.missed_cancers_timeseries.append(total_missed_cancers)
+    prevalence_logger.label='prevalence_logger'
+
+
+    #Iterate through the simulations 
+    for x,y,z in alg_intervals:
+        #Set up simulation base parameters
+        base_pars = deepcopy(base_pars)
+        base_pars['interventions'] = [make_prevalence_logs] + screeningAlgorithms.get_interventions(v=x,u=y,a=z) + NHS_Vacc.vaccinations + [prevalence_logger]
+
+        
+        #Run all the simulations
+        num_params = len(final_cal_data) #number of parameterisations which make up the ensemble model we are using
+        for i in tqdm(range(num_params)):
+            cal_params = final_cal_data[i][0] #specific parametersation of this iteration (note final_cal_data[i] is a tuple (parameterisation tuple, GOF, order statistic of GOF within the calibration that generated it, ID of calibration where the parameterisation was sampled ))
+            tmp_base_pars = deepcopy(base_pars) #make deep copy of provided {base_pars} to add specific calibration parameters and logger to it without changing the original copy passed into this function
+
+
+            #Set seed
+            tmp_base_pars['rand_seed'] = seed*num_params + i #this ensures that we give HPVsim a unique random seed for each parameterisation (seed fixed) and for each seed (parameterisation fixed); so no two runs - unless both seed and parameterisation are the same - will have the same HPVsim seed, and therefore we can assume independance 
+
+            #Set non-genotype calibrated parameters to this iteration's parameterisation
+            tmp_base_pars['beta'] = cal_params[par_labels.index('params_beta')]
+            tmp_base_pars['f_cross_layer'] = cal_params[par_labels.index('params_f_cross_layer')]
+            tmp_base_pars['m_cross_layer'] = cal_params[par_labels.index('params_m_cross_layer')]
+
+            #Set up {tmp_base_pars} to allow for specification of genotype parameters
+            tmp_base_pars['genotype_pars'] = sc.objdict() #initialise genotype parameters within hpvsim
+            for g in tmp_base_pars['genotypes']:
+                tmp_base_pars['genotype_pars'][g] = get_genotype_pars(genotype=g)
+
+            #Set genotype calibrated parameters to this iteration's parameterisation
+            tmp_base_pars['genotype_pars']['hpv16']['cin_fn']['k'] = cal_params[par_labels.index('params_hpv16_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hpv16']['dur_cin']['par1'] = cal_params[par_labels.index('params_hpv16_dur_cin_par1')]
+
+            tmp_base_pars['genotype_pars']['hpv18']['cin_fn']['k'] = cal_params[par_labels.index('params_hpv18_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hpv18']['dur_cin']['par1'] = cal_params[par_labels.index('params_hpv18_dur_cin_par1')]
+            
+            tmp_base_pars['genotype_pars']['hi5']['cin_fn']['k'] = cal_params[par_labels.index('params_hi5_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['hi5']['dur_cin']['par1'] = cal_params[par_labels.index('params_hi5_dur_cin_par1')]
+            tmp_base_pars['genotype_pars']['hi5']['rel_beta'] = cal_params[par_labels.index('params_hi5_rel_beta')]
+
+            tmp_base_pars['genotype_pars']['ohr']['cin_fn']['k'] = cal_params[par_labels.index('params_ohr_cin_fn_k')]
+            tmp_base_pars['genotype_pars']['ohr']['dur_cin']['par1'] = cal_params[par_labels.index('params_ohr_dur_cin_par1')]
+            tmp_base_pars['genotype_pars']['ohr']['rel_beta'] = cal_params[par_labels.index('params_ohr_rel_beta')]
+
+            #Initialise and run sim itself, and extract logged data
+            sim = hpv.Sim(tmp_base_pars)
+            sim.run()
+            final_timeseries[i][(x,y,z)] = (sim.true_infections_timeseries, 
+                                            sim.missed_infections_timeseries,
+                                            sim.true_cancers_timeseries, 
+                                            sim.missed_cancers_timeseries )
+    return final_timeseries
+
+def save_missed_infections_and_cancer_curves_all_algs():
+    """
+    Generates curves for all algs of interest using get_missed_infections_and_cancers_curves_all_algs, and saves for each algorithm in its own pickle file for use later.
+
+    The pickle files generated by this will have one file per screening algorithm, and have - for each parameter we tried - the total infections, missed infections, total cancers, and missed cancers over time.
+    NOTE: I have done this a simple way where we don't add in tracking of seeds into the file. 
+    TODO: I should really just integrate this result generation (and the result generation of detected prevalences at primary/routine screening) into the main result generation body; that way everything gets generated at once and we have timeseries in a standard format! Do this when I am clearing up the github??
+    """
+    #define for a single seed, as this is a secondary metric we are doing it with a little less resolution
+    seed = 0
+    #define for the full set of algorithms, so we can report values as freely even if we only end up plotting some of them
+    alg_intervals = [(5,5,5), (10,10,10),
+                     (7,5,5), (10,5,5), (15,5,5), (0, 5,5),
+                     (7,7,5), (10,10,5), (15,15,5), (0,0,5),
+                     (10,7,5), (15,10,5)
+                    ]
+    #we report population-wise, at least to start with #NOTE: we may change below to report in different subpopulations. 
+                                                            #^ NOTE: if doing such changes, definitely change filename to make this clear!
+    vacc_only = True; unvacc_vacc_elig_only = False; vacc_inelig_only = False
+
+    for alg_interval_i in range(len(alg_intervals)):
+        print(f"------ STARTING algorithm {alg_interval_i+1}/{len(alg_intervals)} ------")
+        x,y,z = alg_intervals[alg_interval_i] #defines our algorithm V{x}U{y}A{z}
+        
+        filename = f"project_modelling/pickled_results/missedInfectionsAndCancerCurves_V{x}U{y}A{z}_{scenario_code}_VACCONLY.pickle" #scenario_code captures settings of the parameters involved in sensitivty analysis, to store the state of the model in terms of these hyperparameters at the point of us generating the results we then load from files
+        
+
+
+        curves_dict = get_missed_infections_and_cancers_curves_all_algs(seed, 
+                                                          vacc_only = vacc_only,
+                                                          unvacc_vacc_elig_only = unvacc_vacc_elig_only,
+                                                          vacc_inelig_only = vacc_inelig_only,
+                                                          alg_intervals=[(x,y,z)])
+        condensed_curves_dict = {paramno: curves_dict[paramno][(x,y,z)] for paramno in curves_dict.keys()}
+        
+        with open(filename,'wb') as file:
+            pickle.dump(condensed_curves_dict, file)
+
+def plot_missed_infections_and_cancer_curves_all_algs():
+    #Define whether we want to plot the IQRs (if so, plots medians and IQRs, else just plots medians)
+    plot_iqrs = True 
+
+
+    #Define whether we want to show underlying cancer prevalcne projections for V5U5A5 to comapre things with it - probs not in main body figure for busy-ness but will in text?
+    show_underlying_cancer_at_baseline = False
+
+    #Define the set of algorithms we will be plotting 
+    alg_intervals = [(5,5,5), (10,10,10),
+                     (7,5,5), (10,5,5), (15,5,5), (0, 5,5),
+                     (7,7,5), (10,10,5), (15,15,5), (0,0,5),
+                     (10,7,5), (15,10,5)
+                    ]
+    
+    #Define the file name structure for the files we will be loading
+    population = 'UVVEONLY'
+    #population = 'VACCONLY'
+    #population = 'FULLPOP'
+    print(f"Doing things for scenario code {scenario_code}")
+    filename_by_alg_interval = lambda alg: f"project_modelling/pickled_results/missedInfectionsAndCancerCurves_V{alg[0]}U{alg[1]}A{alg[2]}_{scenario_code}_{population}.pickle"
+
+    
+    #Load in all the data
+    true_infections_by_alg = {alg: [] for alg in alg_intervals} #for each alg we will end up with a list of curves to plot summary-statistic curves of
+    missed_infections_by_alg = {alg: [] for alg in alg_intervals}
+    true_cancers_by_alg = {alg: [] for alg in alg_intervals}
+    missed_cancers_by_alg = {alg: [] for alg in alg_intervals}
+    for alg in alg_intervals:
+        try: 
+            with open(filename_by_alg_interval(alg), 'rb') as f:
+                loaded_data = pickle.load(f)
+                for paramindex in loaded_data.keys():
+                    true_infections_by_alg[alg].append(smooth_list(loaded_data[paramindex][0],4))
+                    missed_infections_by_alg[alg].append(smooth_list(loaded_data[paramindex][1],4))
+                    true_cancers_by_alg[alg].append(smooth_list(loaded_data[paramindex][2],4))
+                    missed_cancers_by_alg[alg].append(smooth_list(loaded_data[paramindex][3],4))
+
+            #Convert to numpy arrays for computation of summary statistics for curves later
+            true_infections_by_alg[alg] = np.array(true_infections_by_alg[alg])
+            missed_infections_by_alg[alg] = np.array(missed_infections_by_alg[alg])
+            true_cancers_by_alg[alg] = np.array(true_cancers_by_alg[alg])
+            missed_cancers_by_alg[alg] = np.array(missed_cancers_by_alg[alg])
+        except:
+            print("Failed to find the correct file. Quitting.")
+            quit()
+    
+    #Plot infections curve (missed infections and ground truth, which can be added for reference as it doesnt change with algorithm)
+    _ , ax = plt.subplots(1,1, figsize=(7, 5))
+    print("\n INFECTION PREVALENCE/MISSED INFECTIONS RESULTS")
+
+        # underlying prevalence
+    true_infections = true_infections_by_alg[alg_intervals[0]] #true infections dont change with alg, so arbitarily picking one algs' 
+    ax.plot(np.median(true_infections, axis=0), color="black", linestyle='dotted', label='Underlying Prevalence')
+    if plot_iqrs:
+        ax.fill_between(list(range(len(true_infections[0]))),
+                    np.percentile(true_infections, 25, axis=0), np.percentile(true_infections, 75, axis=0), 
+                    color="black", alpha=0.07)
+    medians = np.median(true_infections, axis=0) 
+    LQs = np.percentile(true_infections, 25, axis=0)
+    UQs = np.percentile(true_infections, 75, axis=0)
+    print(f"True prevalence at 2040: median={medians[160+80]}, central 50th perecntile={(LQs[160+80], UQs[160+80])}")
+    print(f"True prevalence at 2050: median={medians[200+80]}, central 50th perecntile={(LQs[200+80], UQs[200+80])}")
+
+
+        # missed prevalence
+    for alg in alg_intervals:
+        x = alg[0] if alg[0] != 0 else "-"
+        y = alg[1] if alg[1] != 0 else "-"
+        z = alg[2] if alg[2] != 0 else "-"
+
+        vals = missed_infections_by_alg[alg]
+        ax.plot(np.median(vals, axis=0), color=colors_by_algorithm_interval[alg], label=f'V{x}U{y}A{z}')
+        if plot_iqrs:
+            ax.fill_between(list(range(len(vals[0]))),
+                        np.percentile(vals, 25, axis=0), np.percentile(vals, 75, axis=0), 
+                        color=colors_by_algorithm_interval[alg], alpha=0.07)
+        medians = np.median(vals, axis=0) 
+        LQs = np.percentile(vals, 25, axis=0)
+        UQs = np.percentile(vals, 75, axis=0)
+        print(f"{alg} missed prevalence at 2040: median={medians[160+80]}, central 50th perecntile={(LQs[160+80], UQs[160+80])}")
+        print(f"{alg} missed prevalence at 2050: median={medians[200+80]}, central 50th perecntile={(LQs[200+80], UQs[200+80])}")
+
+        #plot details
+    ax.set_xticks([80+80,120+80,160+80,200+80],[2020,2030,2040,2050])
+    ax.set_xlim(160,280)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.title(f"Underlying vs Missed (undiagnosed) HPV Infection Prevalence, {population}")
+    #plt.legend()
+    plt.show()
+
+
+    #Plot cancers curve with (missed cancers)
+    _ , ax = plt.subplots(1,1, figsize=(7, 5))
+    print("\n MISSED CANCER RESULTS")
+
+        # plot missed cancers
+    for alg in alg_intervals:
+        x = alg[0] if alg[0] != 0 else "-"
+        y = alg[1] if alg[1] != 0 else "-"
+        z = alg[2] if alg[2] != 0 else "-"
+
+        vals = missed_cancers_by_alg[alg]
+        ax.plot(np.median(vals, axis=0), color=colors_by_algorithm_interval[alg], label=f'V{x}U{y}A{z}')
+        ax.fill_between(list(range(len(vals[0]))),
+                        np.percentile(vals, 25, axis=0), np.percentile(vals, 75, axis=0), 
+                        color=colors_by_algorithm_interval[alg], alpha=0.07)
+        medians = np.median(vals, axis=0) 
+        LQs = np.percentile(vals, 25, axis=0)
+        UQs = np.percentile(vals, 75, axis=0)
+        print(f"{alg} missed cancers at 2040: median={medians[160+80]}, central 50th perecntile={(LQs[160+80], UQs[160+80])}")
+        print(f"{alg} missed cancers at 2050: median={medians[200+80]}, central 50th perecntile={(LQs[200+80], UQs[200+80])}")
+
+
+        # underlying prevalence for V5U5A5, to contextualise the number of cancers we are talking about
+    if show_underlying_cancer_at_baseline:
+        true_cancers = true_cancers_by_alg[(5,5,5)]
+        ax.plot(np.median(true_cancers, axis=0), color="black", linestyle='dotted', label='Underlying Prevalence under Current Projections')
+        if plot_iqrs:
+            ax.fill_between(list(range(len(true_cancers[0]))),
+                        np.percentile(true_cancers, 25, axis=0), np.percentile(true_cancers, 75, axis=0), 
+                        color="black", alpha=0.07)
+        print(f"True Cancer Prevalence at 2040 for V5U5A5: median={np.median(true_cancers, axis=0)[160+80]}, LQ={np.percentile(true_cancers, 25, axis=0)[160+80]}, UQ={np.percentile(true_cancers, 75, axis=0)[160+80]}")
+        print(f"True Cancer Prevalence at 2050 for V5U5A5: median={np.median(true_cancers, axis=0)[200+80]}, LQ={np.percentile(true_cancers, 25, axis=0)[200+80]}, UQ={np.percentile(true_cancers, 75, axis=0)[200+80]}")
+
+
+        #plot details
+    ax.set_xticks([80+80,120+80,160+80,200+80],[2020,2030,2040,2050])
+    ax.set_xlim(160,280)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.title(f"Missed (undiagnosed) Cancer Prevalence, {population}")
+    #plt.legend()
+    plt.show()
+
+
+    
+
+
+###- (4) UTILITY FUNCTIONALITY -### 
+def wilson_interval(x, n):
+    """
+    returns Wilson confidence interval margin for p if X~B(n,p) with observation X=x
+    To turn centre, margin to an interval with margin, just call the interval [0,1] INTERSECT [centre-margin, centre+margin]
+    """
+    if not (0 <= x <= n):
+        raise ValueError("Require 0 <= x <= n")
+    if n <= 0:
+        raise ValueError("n must be positive")
+
+    z = 1.95996398454  # 95% CI
+    phat = x / n #MLE estimation for p
+    z2 = z * z
+
+    denom = 1 + z2 / n
+    centre = (phat + z2 / (2 * n)) / denom
+    margin = (z / denom) * sqrt((phat * (1 - phat) / n) + (z2 / (4 * n * n)))
+
+    return centre, margin
+
+ 
+    
 def get_history_matches_paramseeds(alg, 
                                    data_name = 'inc_cancers_fullpop_alltypes',
                                    observations_by_tp = cancer_incidence_history,
@@ -2192,7 +2633,8 @@ def get_elimination_table( alg_stems,
                                 target_value=1,
                                 accepted_paramandseeds = None,
                                 tps_of_interest = [241, 281],
-                                smoothing_kernel=4
+                                smoothing_kernel=4,
+                                vacc_levels = ['_6','_8','_9']
                                 ):
     """
     Saves a csv that forms a table of values relevant to cervical cancer elimination under different algorithms and vaccination levels.
@@ -2215,7 +2657,7 @@ def get_elimination_table( alg_stems,
 
     #Add column headings
     row = ['alg']
-    for vacc_level in ['_6','_8','_9']:
+    for vacc_level in vacc_levels:
         row.append(f"Elimination Year: Median [LQ, UQ] ({vacc_level})")
         for tp in tps_of_interest:
             row.append(f"{year_by_tp(tp)} Elimination Probability ({vacc_level})")
@@ -2225,9 +2667,10 @@ def get_elimination_table( alg_stems,
     pop = get_relevant_pop_name(data_name) 
 
     #Populate rest of rows of table
+    max_margin = 0 #accumulates the greatest margin over all the wilson confidence intervals centre+-margin
     for alg_stem in tqdm(alg_stems):
         row=[alg_stem] #starting off row with the row heading (the name of the algorithm)
-        for vacc_level in ['_6', '_8', '_9']:
+        for vacc_level in vacc_levels:
             alg = f'{alg_stem}{vacc_level}{cal_case_suffix}'
 
             #Load timeseries
@@ -2261,7 +2704,7 @@ def get_elimination_table( alg_stems,
                 
                 #Determine timepoint at which we first are at elimination
                 is_eliminated = (data <= target_value)
-                elimination_start = np.where(~is_eliminated)[0][-1] + 1 #this finds the index of the last 'False' and then adds 1. elimijnation_start>=len(is_eliminated) => elimination never reached
+                elimination_start = np.where(~is_eliminated)[0][-1] + 1 #this finds the index of the last 'False' and then adds 1. elimination_start>=len(is_eliminated) => elimination never reached
 
                 #Update accumulator variables
                 elimination_tps.append(elimination_start)
@@ -2275,7 +2718,11 @@ def get_elimination_table( alg_stems,
             UQ_elimination_year = year_by_tp(np.percentile(elimination_tps, 75))
             elim_proportions = {}
             for tp in tps_of_interest:
-                elim_proportions[tp] = elim_counts[tp] / len(accepted_paramandseeds)
+                #elim_proportions[tp] = elim_counts[tp] / len(accepted_paramandseeds) #this just does MLE for elimination proportions; we are now using Wilson's confidence interval instead to more accurately esimate them (it is a biased estimate but a good CI)
+                centre, margin = wilson_interval(elim_counts[tp], len(accepted_paramandseeds))
+                elim_proportions[tp] = centre
+                if margin>max_margin:
+                    max_margin = margin
 
             #Add the relevant values to the csv file
             row.append("{:.0f}".format(median_elimination_year) + " [" + "{:.0f}".format(LQ_elimination_year) + ", " + "{:.0f}".format(UQ_elimination_year) + "]")
@@ -2287,6 +2734,10 @@ def get_elimination_table( alg_stems,
     with open(csv_filename, 'w') as f:
         csvwriter = csv.writer(f, delimiter=',')
         csvwriter.writerows(tabular_data)
+
+    print(f"Maximum margin: {max_margin}")
+
+
 
 ###- (6) 'Helper' result generation -###
 
@@ -2321,6 +2772,9 @@ def ttest_powerplot(ax, lower_std_bound, upper_std_bound, effect_size_lower=-4, 
 
     return ax
     
+
+
+
 
 
 ###- (7) Specifically generating the plots as in the paper -###
@@ -2381,6 +2835,21 @@ def fig3_timeseries_helper(data_name,
 
 
 if __name__=="__main__":
+
+    #suffix = '_8_68_76_55_55_9_9__96_7_13' #SA0
+    #suffix = '_65_68_76_55_55_9_9__96_7_13' #SA1
+    #suffix = '_8_68_76_36_36_8_8__96_7_13' #SA2
+    #suffix = '_8_8_8_68_68_95_95__96_7_13' #SA3
+    #suffix = '_8_68_76_55_55_9_9_1_96_7_13' #SA4
+    #suffix = '_8_68_76_55_55_9_9__96_7_62' #SA5
+    #suffix = '_8_68_76_55_55_9_9__9_85_13' #SA6
+
+    plot_missed_infections_and_cancer_curves_all_algs()
+    quit()
+
+    #save_missed_infections_and_cancer_curves_all_algs()
+    #quit()
+
     #plot_observed_infections_curves()
     #quit()
 
@@ -2397,13 +2866,98 @@ if __name__=="__main__":
     quit()
     """
 
+    """
+    #Uncomment this block of code specifically for the comparisons of algorithms across vaccine-uptake levels as in section 'the impact of reduced vaccine-uptake' #TODO: i suppose this section name will change as the manuscript changes so update this once finalised
 
-    #"""
+    alg_stems = ['V5U5A5','V10U5A5', 'V10U7A5','V10U10A5', 'V_U5A5', 'V_U_A5', 'V7U5A5', 'V7U7A5', 'V15U5A5', 'V15U15A5']
+
+    accepted_paramseeds, _ = get_history_matches_paramseeds('V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
+                                   'inc_cancers_fullpop_alltypes',
+                                   cancer_incidence_history,
+                                   0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                   )
+    
+    print("Comparing 60\% and 80\% vaccine uptake")
+    for alg_stem in alg_stems:
+        total_diffs, unpairedcompared, unpairedbaseline = get_total_diffs('inc_cancers_fullpop_alltypes',
+                                f"{alg_stem}_8_8_68_76_55_55_9_9__96_7_13",
+                                f"{alg_stem}_6_8_68_76_55_55_9_9__96_7_13",
+                                start_tp = 280, end_tp=283, #thsi gets the sum over 2050
+                                normalise_per_100k=True,
+                                accepted_paramandseeds=accepted_paramseeds
+                                )
+        if len(unpairedcompared)>0 or len(unpairedbaseline)>0:
+            print(f"Failed to pair some of {alg_stem}'s runs between 60% and 80% uptake scenarios. {len(total_diffs)} runs were still paired successfully between the algorithms. Perhaps need to still generate some results?")
+        ttest_result = stats.ttest_rel(total_diffs, 0, alternative='two-sided')
+        pvalue = ttest_result.pvalue
+        statistic = ttest_result.statistic
+        print(f"{alg_stem} => {pvalue}, {statistic}")
+
+    print("Comparing 80\% and 90\% vaccine uptake")
+    for alg_stem in alg_stems:
+        total_diffs, unpairedcompared, unpairedbaseline = get_total_diffs('inc_cancers_fullpop_alltypes',
+                                f"{alg_stem}_8_8_68_76_55_55_9_9__96_7_13",
+                                f"{alg_stem}_9_8_68_76_55_55_9_9__96_7_13",
+                                start_tp = 280, end_tp=283, #thsi gets the sum over 2050
+                                normalise_per_100k=True,
+                                accepted_paramandseeds=accepted_paramseeds
+                                )
+        if len(unpairedcompared)>0 or len(unpairedbaseline)>0:
+            print(f"Failed to pair some of {alg_stem}'s runs between 60% and 80% uptake scenarios. {len(total_diffs)} runs were still paired successfully between the algorithms. Perhaps need to still generate some results?")
+        ttest_result = stats.ttest_rel(total_diffs, 0, alternative='two-sided')
+        pvalue = ttest_result.pvalue
+        statistic = ttest_result.statistic
+        print(f"{alg_stem} => {pvalue}, {statistic}")
+        
+
+    """
+
+    """
     #Uncomment this block of code to get code which gets the specific values referred to in the abstract/results section
-    algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
-    algs_to_plot = ['V5U5A5','V10U7A5', 'V15U10A5']
+    algs_to_plot = ['V5U5A5', 'V10U10A10', 'V7U5A5', 'V10U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5']
+    algs_to_plot = ['V5U5A5']
     for i in range(len(algs_to_plot)):
         algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
+        #algs_to_plot[i] += '_6_8_68_76_55_55_9_9__96_7_13'
+
+    accepted_paramseeds, _ = get_history_matches_paramseeds(algs_to_plot[0],
+                                   'inc_cancers_fullpop_alltypes',
+                                   cancer_incidence_history,
+                                   0.15 ,#error limit, 0.15-0.2 is pretty valid i think
+                                   )
+
+
+    numerators = get_simple_totals('routine_screens_fullpop',
+                           #        start_tp = 200, end_tp=240, #this is 2030-40
+                                   start_tp = 240, end_tp = 280, #this is 2040-50
+                              #     start_tp = 200, end_tp=280,  #this is 2030-50
+                        normalise_per_100k=False, algs=algs_to_plot,
+                        accepted_paramandseeds = accepted_paramseeds)
+    denominators = get_simple_totals('inc_cancers_diagnosed_fullpop_alltypes',
+                           #        start_tp = 200, end_tp=240, #this is 2030-40
+                                   start_tp = 240, end_tp = 280, #this is 2040-50
+                              #     start_tp = 200, end_tp=280,  #this is 2030-50
+                        normalise_per_100k=False, algs=algs_to_plot,
+                        accepted_paramandseeds = accepted_paramseeds)
+    for alg in numerators.keys():
+        numerator = np.array(numerators[alg])
+        denominator = np.array(denominators[alg])
+        vals = numerator/denominator
+
+        mean = np.mean(vals)
+        std = np.std(vals, ddof=1)
+        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(vals)}")
+
+    """
+
+    """
+    #Uncomment this block of code to get code which gets the specific values referred to in the abstract/results section
+    algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
+    algs_to_plot = ['V5U5A5','V10U5A5', 'V10U7A5','V10U10A5']
+    algs_to_plot = ['V7U7A5']
+    for i in range(len(algs_to_plot)):
+        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
+        #algs_to_plot[i] += '_6_8_68_76_55_55_9_9__96_7_13'
 
     accepted_paramseeds, _ = get_history_matches_paramseeds(algs_to_plot[0],
                                    'inc_cancers_fullpop_alltypes',
@@ -2416,37 +2970,43 @@ if __name__=="__main__":
     #240-243 inclusive for totals in 2040
     #280-283 inclsuive for totals in 2050
 
-    print("1")
+    print("1: LTUP 2040")
     simple_totals = get_simple_totals('prev_cancers_ud5y_fullpop_alltypes', start_tp = 240, end_tp=243, 
                         normalise_per_100k=True, algs=algs_to_plot,
                         accepted_paramandseeds = accepted_paramseeds)
     for alg in simple_totals.keys():
-        print(f"Mean: {np.mean(simple_totals[alg])} \n\t std: {np.std(simple_totals[alg], ddof=1)} \n\t Median: {np.median(simple_totals[alg])}")
-    
-    print("2")
+        mean = np.mean(simple_totals[alg])
+        std = np.std(simple_totals[alg], ddof=1)
+        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals[alg])}")
+
+    print("2: LTUP 2050")
     simple_totals = get_simple_totals('prev_cancers_ud5y_fullpop_alltypes', start_tp = 280, end_tp=283, 
                         normalise_per_100k=True, algs=algs_to_plot,
                         accepted_paramandseeds = accepted_paramseeds)
     for alg in simple_totals.keys():
-        print(f"Mean: {np.mean(simple_totals[alg])} \n\t std: {np.std(simple_totals[alg], ddof=1)} \n\t Median: {np.median(simple_totals[alg])}")
-    
-    print("3")
+        mean = np.mean(simple_totals[alg])
+        std = np.std(simple_totals[alg], ddof=1)
+        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals[alg])}")
+
+    print("3: CCI 2040")
     simple_totals = get_simple_totals('inc_cancers_fullpop_alltypes', start_tp = 240, end_tp=243, 
                         normalise_per_100k=True, algs=algs_to_plot,
                         accepted_paramandseeds = accepted_paramseeds)
     for alg in simple_totals.keys():
-        print(f"Mean: {np.mean(simple_totals[alg])} \n\t std: {np.std(simple_totals[alg], ddof=1)} \n\t Median: {np.median(simple_totals[alg])}")
-    
-    print("4")
+        mean = np.mean(simple_totals[alg])
+        std = np.std(simple_totals[alg], ddof=1)
+        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals[alg])}")
+
+    print("4: CCI 2050")
     simple_totals = get_simple_totals('inc_cancers_fullpop_alltypes', start_tp = 280, end_tp=283, 
                         normalise_per_100k=True, algs=algs_to_plot,
                         accepted_paramandseeds = accepted_paramseeds)
     for alg in simple_totals.keys():
-        print(f"Mean: {np.mean(simple_totals[alg])} \n\t std: {np.std(simple_totals[alg], ddof=1)} \n\t Median: {np.median(simple_totals[alg])}")
+        mean = np.mean(simple_totals[alg])
+        std = np.std(simple_totals[alg], ddof=1)
+        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals[alg])}")
     
-
-    
-    #"""
+    """
 
     """
     #Uncomment this to get the timeseries plots for Figure 3
@@ -2628,23 +3188,39 @@ if __name__=="__main__":
     plt.show()
     """
 
-    """
+    #"""
     #Uncomment this block to get the elimination tables generated and saved to csvs
-    algs_to_plot = ['V5U5A5','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
+    algs_to_plot = ['V5U5A5','V7U5A5','V10U5A5',
+                    'V15U5A5', 
+                    'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5',
+                      'V10U7A5',
+                      'V15U10A5', 
+                    'V10U10A10']
     
-    accepted_paramseeds, _ = get_history_matches_paramseeds('V5U5A5_8_8_68_76_55_55_9_9__96_7_13',
+
+
+    #suffix = '_8_68_76_55_55_9_9__96_7_13' #SA0
+    #suffix = '_65_68_76_55_55_9_9__96_7_13' #SA1
+    #suffix = '_8_68_76_36_36_8_8__96_7_13' #SA2
+    #suffix = '_8_8_8_68_68_95_95__96_7_13' #SA3
+    #suffix = '_8_68_76_55_55_9_9_1_96_7_13' #SA4
+    #suffix = '_8_68_76_55_55_9_9__96_7_62' #SA5
+    #suffix = '_8_68_76_55_55_9_9__9_85_13' #SA6
+
+    accepted_paramseeds, _ = get_history_matches_paramseeds(f'V5U5A5_8{suffix}',
                                 'inc_cancers_fullpop_alltypes',
                                 cancer_incidence_history,
                                 0.15 ,#error limit, 0.15-0.2 is pretty valid i think
                                 )
     
     get_elimination_table(alg_stems=algs_to_plot,
-                          data_name='inc_cancers_ineligiblepop_alltypes', 
-                               cal_case_suffix='_8_68_76_55_55_9_9__96_7_13',
-                               csv_filename='project_modelling/tabular_results/elimination_results_basecase_ineligiblepop_alltypes.csv',
-                               accepted_paramandseeds=accepted_paramseeds
+                          data_name='inc_cancers_fullpop_alltypes', 
+                               cal_case_suffix=suffix,
+                               csv_filename='project_modelling/tabular_results/test.csv',
+                               accepted_paramandseeds=accepted_paramseeds,
+                               vacc_levels=['_8'] #uncomment this line to just do the case of 80% vaccination
                                )
-    """
+    #"""
 
     """
     #Uncomment this to get the equity timeseries plots
