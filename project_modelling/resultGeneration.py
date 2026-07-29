@@ -2785,7 +2785,8 @@ def fig3_timeseries_helper(data_name,
                     show_cohort_wise=True,
                     show_hybrid = True,
                     show_uniform = True,
-                    show_baseline_mean = False
+                    show_baseline_mean = False,
+                    suffix = '_8_8_68_76_55_55_9_9__96_7_13',
                     ): #not show_quartiles => shows mean with no CI
     #Specify the algorithms being plotted
     algs_to_plot = []
@@ -2799,7 +2800,7 @@ def fig3_timeseries_helper(data_name,
     The algorithms above have been chosen to give an overview of the dynamics at play and their impact on the overall population
     """
     for i in range(len(algs_to_plot)):
-        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
+        algs_to_plot[i] += suffix
 
     #Specify the algorithm-runs we are to allow as valid, according to history matching (to deal a bit with the model randomness)
     #_, history_match_ax = plt.subplots(1,1)
@@ -2836,6 +2837,18 @@ def fig3_timeseries_helper(data_name,
 
 if __name__=="__main__":
 
+   #x = get_history_matches_paramseeds('V5U5A5_8_8_68_76_55_55_9_9__96_7_13', 
+    #                               data_name = 'inc_cancers_fullpop_alltypes',
+     #                              observations_by_tp = cancer_incidence_history,
+      #                             error_limit = 0.2, #informed by what we consider a sufficiently good calibration - this is a fair quantity to also use as a history-match cutoff
+       #                            normalise_per_100k = False,
+        #                           smoothing_kernel=4,
+         #                          ax=plt.subplots(1,1)[1],
+          #                          )
+    #print(len(x[0]),x[1])
+    #plt.show()
+    #quit()
+
     #suffix = '_8_68_76_55_55_9_9__96_7_13' #SA0
     #suffix = '_65_68_76_55_55_9_9__96_7_13' #SA1
     #suffix = '_8_68_76_36_36_8_8__96_7_13' #SA2
@@ -2844,8 +2857,8 @@ if __name__=="__main__":
     #suffix = '_8_68_76_55_55_9_9__96_7_62' #SA5
     #suffix = '_8_68_76_55_55_9_9__9_85_13' #SA6
 
-    plot_missed_infections_and_cancer_curves_all_algs()
-    quit()
+    #plot_missed_infections_and_cancer_curves_all_algs()
+    #quit()
 
     #save_missed_infections_and_cancer_curves_all_algs()
     #quit()
@@ -2950,11 +2963,14 @@ if __name__=="__main__":
 
     """
 
-    """
+    #"""
     #Uncomment this block of code to get code which gets the specific values referred to in the abstract/results section
+    #pop = 'fullpop'
+    #pop = 'vaccpop'
+    pop = 'eligibleunvaccpop'
+
     algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
-    algs_to_plot = ['V5U5A5','V10U5A5', 'V10U7A5','V10U10A5']
-    algs_to_plot = ['V7U7A5']
+    algs_to_plot = ['V5U5A5','V7U7A5','V10U10A5']
     for i in range(len(algs_to_plot)):
         algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
         #algs_to_plot[i] += '_6_8_68_76_55_55_9_9__96_7_13'
@@ -2971,25 +2987,27 @@ if __name__=="__main__":
     #280-283 inclsuive for totals in 2050
 
     print("1: LTUP 2040")
-    simple_totals = get_simple_totals('prev_cancers_ud5y_fullpop_alltypes', start_tp = 240, end_tp=243, 
+    simple_totals = get_simple_totals(f'prev_cancers_ud5y_{pop}_alltypes', start_tp = 240, end_tp=243, 
                         normalise_per_100k=True, algs=algs_to_plot,
                         accepted_paramandseeds = accepted_paramseeds)
     for alg in simple_totals.keys():
-        mean = np.mean(simple_totals[alg])
-        std = np.std(simple_totals[alg], ddof=1)
-        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals[alg])}")
+        simple_totals_alg = np.array(simple_totals[alg])/4 #LTUP is a prevalence, not incidence, value, so we need to divide by the number of timepoints over which we have summed to not over-count (otherwise a single person with undiagnosed cancer over all 4 timepoints that year will be quadruple-counted)
+        mean = np.mean(simple_totals_alg)
+        std = np.std(simple_totals_alg, ddof=1)
+        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals_alg)}")
 
     print("2: LTUP 2050")
-    simple_totals = get_simple_totals('prev_cancers_ud5y_fullpop_alltypes', start_tp = 280, end_tp=283, 
+    simple_totals = get_simple_totals(f'prev_cancers_ud5y_{pop}_alltypes', start_tp = 280, end_tp=283, 
                         normalise_per_100k=True, algs=algs_to_plot,
                         accepted_paramandseeds = accepted_paramseeds)
     for alg in simple_totals.keys():
-        mean = np.mean(simple_totals[alg])
-        std = np.std(simple_totals[alg], ddof=1)
-        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals[alg])}")
+        simple_totals_alg = np.array(simple_totals[alg])/4 #LTUP is a prevalence, not incidence, value, so we need to divide by the number of timepoints over which we have summed to not over-count (otherwise a single person with undiagnosed cancer over all 4 timepoints that year will be quadruple-counted)
+        mean = np.mean(simple_totals_alg)
+        std = np.std(simple_totals_alg, ddof=1)
+        print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals_alg)}")
 
     print("3: CCI 2040")
-    simple_totals = get_simple_totals('inc_cancers_fullpop_alltypes', start_tp = 240, end_tp=243, 
+    simple_totals = get_simple_totals(f'inc_cancers_{pop}_alltypes', start_tp = 240, end_tp=243, 
                         normalise_per_100k=True, algs=algs_to_plot,
                         accepted_paramandseeds = accepted_paramseeds)
     for alg in simple_totals.keys():
@@ -2998,7 +3016,7 @@ if __name__=="__main__":
         print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals[alg])}")
 
     print("4: CCI 2050")
-    simple_totals = get_simple_totals('inc_cancers_fullpop_alltypes', start_tp = 280, end_tp=283, 
+    simple_totals = get_simple_totals(f'inc_cancers_{pop}_alltypes', start_tp = 280, end_tp=283, 
                         normalise_per_100k=True, algs=algs_to_plot,
                         accepted_paramandseeds = accepted_paramseeds)
     for alg in simple_totals.keys():
@@ -3006,17 +3024,28 @@ if __name__=="__main__":
         std = np.std(simple_totals[alg], ddof=1)
         print(f"Mean: {mean} \n\t 95% CI: {(mean-0.172162802*std, mean+0.172162802*std)} \n\t Median: {np.median(simple_totals[alg])}")
     
-    """
+    #"""
 
     """
     #Uncomment this to get the timeseries plots for Figure 3
+    
+    #suffix = '_6_8_68_76_55_55_9_9__96_7_13' #SA0, vacc 60
+    #suffix = '_8_8_68_76_55_55_9_9__96_7_13' #SA0, vacc 80
+    #suffix = '_9_8_68_76_55_55_9_9__96_7_13' #SA0, vacc 90
+    #suffix = '_8_65_68_76_55_55_9_9__96_7_13' #SA1
+    #suffix = '_8_8_68_76_36_36_8_8__96_7_13' #SA2
+    #suffix = '_8_8_8_8_68_68_95_95__96_7_13' #SA3
+    #suffix = '_8_8_68_76_55_55_9_9_1_96_7_13' #SA4
+    #suffix = '_8_8_68_76_55_55_9_9__96_7_62' #SA5
+    #suffix = '_8_8_68_76_55_55_9_9__9_85_13' #SA6
+
 
     show_quartiles = True #else, shows just the mean
     show_legend = False
-    show_vaccwise = True
-    show_cohortwise = True
+    show_vaccwise = False
+    show_cohortwise = False
     show_hybrid = True
-    show_uniform = True
+    show_uniform = False
     show_baseline_mean = False #good to have this on as a comparator when baseline is not in the plot
 
     ax = fig3_timeseries_helper('inc_cancers_fullpop_alltypes', 
@@ -3027,27 +3056,31 @@ if __name__=="__main__":
                     show_hybrid=show_hybrid,
                     show_uniform=show_uniform, #shown uniform interval
                     show_baseline_mean=show_baseline_mean,
+                    suffix = suffix,
                     )
     ax.set_ylim((0,3))
     ax.set_yticks([0,0.5,1,1.5,2,2.5,3],[0,2,4,6,8,10,12]) #needs rescaling of y axis as these incidence numbers are just per 3 month interval, but we want to be reading the annual incidence rate at each timepoint
     ax.hlines(1, 0, 10000000, colors='black', linestyles='dashed')
     for ytick in ax.get_yticks():
         ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_title('Cancer Incidence (full population, all genotypes)')
 
-    ax = fig3_timeseries_helper('inc_cancers_diagnosed_fullpop_alltypes', #the reciprocal o this ratio is taken in the fig3_timeseries function to get the quantity we want
-                    other_data_name='routine_screens_fullpop', 
-                    show_quartiles=show_quartiles,#show quartiles 
-                    legend=show_legend, #show legend
-                    show_vacc_wise=show_vaccwise, #show vacc wise
-                    show_cohort_wise=show_cohortwise, #show cohort wise
-                    show_hybrid=show_hybrid,
-                    show_uniform=show_uniform, #shown uniform interval
-                    show_baseline_mean=show_baseline_mean,
-                    )
-    ax.set_ylim((0,17_000)) 
-    ax.set_yticks([0,2_500,5_000,7_500,10_000,12_500,15_000], [0,10_000,20_000,30_000,40_000,50_000,60_000])
-    for ytick in ax.get_yticks():
-        ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    #ax = fig3_timeseries_helper('inc_cancers_diagnosed_fullpop_alltypes', #the reciprocal o this ratio is taken in the fig3_timeseries function to get the quantity we want
+     #               other_data_name='routine_screens_fullpop', 
+      #              show_quartiles=show_quartiles,#show quartiles 
+       #             legend=show_legend, #show legend
+        #            show_vacc_wise=show_vaccwise, #show vacc wise
+         #           show_cohort_wise=show_cohortwise, #show cohort wise
+          #          show_hybrid=show_hybrid,
+           #         show_uniform=show_uniform, #shown uniform interval
+            #        show_baseline_mean=show_baseline_mean,
+             #       suffix = suffix,
+              #      )
+    #ax.set_ylim((0,17_000)) 
+    #ax.set_yticks([0,2_500,5_000,7_500,10_000,12_500,15_000], [0,10_000,20_000,30_000,40_000,50_000,60_000])
+    #for ytick in ax.get_yticks():
+     #   ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    #ax.set_title('Cancer Diagnoses (full population, all genotypes)')
 
     ax = fig3_timeseries_helper('prev_cancers_ud5y_fullpop_alltypes', 
                     show_quartiles=show_quartiles,#show quartiles 
@@ -3057,10 +3090,12 @@ if __name__=="__main__":
                     show_hybrid=show_hybrid,
                     show_uniform=show_uniform, #shown uniform interval
                     show_baseline_mean=show_baseline_mean,
+                    suffix=suffix
                     )
     ax.set_ylim((0,14)) #this does not need rescaling as although resolution is 3-monthly, we are just recording prevalence so thats fine
     for ytick in ax.get_yticks():
         ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_title("Long Term Undiagnosed Cancers (full population, all genotypes)")
 
     ax = fig3_timeseries_helper('routine_screens_fullpop', 
                     show_quartiles=show_quartiles,#show quartiles 
@@ -3070,22 +3105,38 @@ if __name__=="__main__":
                     show_hybrid=show_hybrid,
                     show_uniform=show_uniform, #shown uniform interval
                     show_baseline_mean=show_baseline_mean,
+                    suffix=suffix
                     )
     ax.set_ylim((0,3_000))
     ax.set_yticks([0,500,1000,1500,2000,2500,3000], [0,2000,4000,6000,8000,10000,12000]) #this needs rescaling so that each point goes from a 'per 3 months' rate to an annual rate
     for ytick in ax.get_yticks():
         ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_title("Number of Administered Routine Screens (full population, all genotypes)")
 
     plt.show()
     """
 
     """
     #Uncomment this to get the barchart plot at the bottom of Figure 3
-    pop='ineligiblepop'
+    #pop='ineligiblepop'
+    pop='eligibleunvaccpop'
+    #pop='vaccpop'
+    #pop='fullpop'
+
+    #suffix = '_6_8_68_76_55_55_9_9__96_7_13' #SA0, 60% uptake
+    #suffix = '_8_8_68_76_55_55_9_9__96_7_13' #SA0, 80% uptake
+    #suffix = '_9_8_68_76_55_55_9_9__96_7_13' #SA0, 90% uptake
+    #suffix = '_8_65_68_76_55_55_9_9__96_7_13' #SA1, 80% uptake
+    #suffix = '_8_8_68_76_36_36_8_8__96_7_13' #SA2, 80% uptake
+    #suffix = '_8_8_8_8_68_68_95_95__96_7_13' #SA3, 80% uptake
+    #suffix = '_8_8_68_76_55_55_9_9_1_96_7_13' #SA4, 80% uptake
+    #suffix = '_8_8_68_76_55_55_9_9__96_7_62' #SA5, 80% uptake
+    suffix = '_8_8_68_76_55_55_9_9__9_85_13' #SA6, 80% uptake
+
 
     algs_to_plot = [ 'V5U5A5','V10U10A10','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5']
     for i in range(len(algs_to_plot)):
-        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
+        algs_to_plot[i] += suffix
     
     accepted_paramseeds, num_rejected = get_history_matches_paramseeds(algs_to_plot[0],
                                    'inc_cancers_fullpop_alltypes',
@@ -3093,6 +3144,8 @@ if __name__=="__main__":
                                    0.15 ,#error limit, 0.15-0.2 is pretty valid i think
                                    )
     fig, ax = plt.subplots(1,1,figsize=(7, 5))
+
+
     print("cancer incidence")
     plot_sum_barchart(ax, 
                       bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
@@ -3122,7 +3175,7 @@ if __name__=="__main__":
                       )
     for ytick in ax.get_yticks():
         ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
-    ax.set_ylabel('screens')
+    ax.set_ylabel('administered screens')
     
     fig, ax = plt.subplots(1,1,figsize=(7, 5))
     print("ud5y")
@@ -3138,16 +3191,16 @@ if __name__=="__main__":
                       )
     for ytick in ax.get_yticks():
         ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
-    ax.set_ylabel('ud5y')
+    ax.set_ylabel('long term undiagnosed cancers')
     
     fig, ax = plt.subplots(1,1,figsize=(7, 5))
     print("screens per dioagnosied cancer")
     plot_sum_barchart(ax, 
                       bar_colors=algorithm_colors, line_colors={a:'none' for a in algorithm_colors.keys()}, 
                       data_name=f'routine_screens_{pop}',
-                    #  start_tp=200, end_tp=280, #this gets sum 2030-2050
+                      start_tp=200, end_tp=280, #this gets sum 2030-2050
                     #  start_tp=240, end_tp=280, #this gets sum in 2040-50
-                      start_tp=200, end_tp=240, #this gets sum in 2030-2040
+                    #  start_tp=200, end_tp=240, #this gets sum in 2030-2040
                       normalise_per_100k=False,
                       algs=algs_to_plot,
                       accepted_paramandseeds=accepted_paramseeds,
@@ -3163,10 +3216,25 @@ if __name__=="__main__":
 
     """
     #Uncomment this block to get the alg comparison grids (from which we do our t-tests and determine clusters of similar algorithms in a quantitative way)
-    algs_to_plot = ['V5U5A5','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
+    
+    #pop='ineligiblepop'
+    #pop='eligibleunvaccpop'
+    #pop='vaccpop'
+    pop='fullpop'
+
+    #suffix = '_6_8_68_76_55_55_9_9__96_7_13' #SA0, 60% uptake
+    #suffix = '_8_8_68_76_55_55_9_9__96_7_13' #SA0, 80% uptake
+    #suffix = '_9_8_68_76_55_55_9_9__96_7_13' #SA0, 90% uptake
+    #suffix = '_8_65_68_76_55_55_9_9__96_7_13' #SA1, 80% uptake
+    #suffix = '_8_8_68_76_36_36_8_8__96_7_13' #SA2, 80% uptake
+    #suffix = '_8_8_8_8_68_68_95_95__96_7_13' #SA3, 80% uptake
+    #suffix = '_8_8_68_76_55_55_9_9_1_96_7_13' #SA4, 80% uptake
+    #suffix = '_8_8_68_76_55_55_9_9__96_7_62' #SA5, 80% uptake
+    suffix = '_8_8_68_76_55_55_9_9__9_85_13' #SA6, 80% uptake
+
+    algs_to_plot = [ 'V5U5A5','V10U10A10','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5']
     for i in range(len(algs_to_plot)):
-        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
-        #algs_to_plot[i] += '_6_8_68_76_55_55_9_9__96_7_13'
+        algs_to_plot[i] += suffix
 
     accepted_paramseeds, _ = get_history_matches_paramseeds(algs_to_plot[0],
                                    'inc_cancers_fullpop_alltypes',
@@ -3174,21 +3242,154 @@ if __name__=="__main__":
                                    0.15 ,#error limit, 0.15-0.2 is pretty valid i think
                                    )
     
+    print()
+    print("Cancer incidence in 2040 (full pop, all types)")
     fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
     plot_alg_comparison_grid(axs,
                              algs_to_plot,
-                             'prev_cancers_ud5y_ineligiblepop_alltypes', #'inc_cancers_fullpop_alltypes',
-                         #    start_tp=200, end_tp = 280, #corresponds to sum 2030-2050
+                             'inc_cancers_fullpop_alltypes',
                              start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
-                           #  start_tp=280,end_tp=283, #this gets the sum over the year 2050
                              accepted_paramandseeds=accepted_paramseeds,
                              normalise_per_100k=True,
                              use_tqdm = False)
+    fig.suptitle("Cancer incidence in 2040 (full pop, all types)")
+
+    print()
+    print("Cancer incidence in 2050 (full pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'inc_cancers_fullpop_alltypes',
+                             start_tp=280,end_tp=283, #this gets the sum over the year 2050
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Cancer incidence in 2050 (full pop, all types)")
+
+    print()
+    print("Long-term undiagnosed cancers in 2040 (full pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'prev_cancers_ud5y_fullpop_alltypes',
+                             start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Long-term undiagnosed cancers in 2040 (full pop, all types)")
+
+    print()
+    print("Long-term undiagnosed cancers in 2050 (full pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'prev_cancers_ud5y_fullpop_alltypes',
+                             start_tp=280,end_tp=283, #this gets the sum over the year 2050
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Long-term undiagnosed cancers in 2050 (full pop, all types)")
+
+    print()
+    print("Cancer incidence in 2040 (vaccinated pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'inc_cancers_vaccpop_alltypes',
+                             start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Cancer incidence in 2040 (vaccinated pop, all types)")
+
+    print()
+    print("Cancer incidence in 2050 (vaccinated pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'inc_cancers_vaccpop_alltypes',
+                             start_tp=280,end_tp=283, #this gets the sum over the year 2050
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Cancer incidence in 2050 (vaccinated pop, all types)")
+
+    print()
+    print("Long-term undiagnosed cancers in 2040 (vaccinated pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'prev_cancers_ud5y_vaccpop_alltypes',
+                             start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Long-term undiagnosed cancers in 2040 (vaccinated pop, all types)")
     
+    print()
+    print("Long-term undiagnosed cancers in 2050 (vaccinated pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'prev_cancers_ud5y_vaccpop_alltypes',
+                             start_tp=280,end_tp=283, #this gets the sum over the year 2050
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Long-term undiagnosed cancers in 2050 (vaccinated pop, all types)")
+    
+    print()
+    print("Cancer incidence in 2040 (unvaccinated vaccine-eligible pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'inc_cancers_eligibleunvaccpop_alltypes',
+                             start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Cancer incidence in 2040 (unvaccinated vaccine-eligible pop, all types)")
+
+    print()
+    print("Cancer incidence in 2050 (unvaccinated vaccine-eligible pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'inc_cancers_eligibleunvaccpop_alltypes',
+                             start_tp=280,end_tp=283, #this gets the sum over the year 2050
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Cancer incidence in 2050 (unvaccinated vaccine-eligible pop, all types)")
+
+    print()
+    print("Long-term undiagnosed cancers in 2040 (unvaccinated vaccine-eligible pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'prev_cancers_ud5y_eligibleunvaccpop_alltypes',
+                             start_tp=240,end_tp=243, #this gets us a sum just over the year 2040
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Long-term undiagnosed cancers in 2040 (unvaccinated vaccine-eligible pop, all types)")
+
+    print()
+    print("Long-term undiagnosed cancers in 2050 (unvaccinated vaccine-eligible pop, all types)")
+    fig, axs  = plt.subplots(len(algs_to_plot), len(algs_to_plot))
+    plot_alg_comparison_grid(axs,
+                             algs_to_plot,
+                             'prev_cancers_ud5y_eligibleunvaccpop_alltypes',
+                             start_tp=280,end_tp=283, #this gets the sum over the year 2050
+                             accepted_paramandseeds=accepted_paramseeds,
+                             normalise_per_100k=True,
+                             use_tqdm = False)
+    fig.suptitle("Long-term undiagnosed cancers in 2050 (unvaccinated vaccine-eligible pop, all types)")
+
     plt.show()
     """
 
-    #"""
+    """
     #Uncomment this block to get the elimination tables generated and saved to csvs
     algs_to_plot = ['V5U5A5','V7U5A5','V10U5A5',
                     'V15U5A5', 
@@ -3199,7 +3400,7 @@ if __name__=="__main__":
     
 
 
-    #suffix = '_8_68_76_55_55_9_9__96_7_13' #SA0
+    suffix = '_8_68_76_55_55_9_9__96_7_13' #SA0
     #suffix = '_65_68_76_55_55_9_9__96_7_13' #SA1
     #suffix = '_8_68_76_36_36_8_8__96_7_13' #SA2
     #suffix = '_8_8_8_68_68_95_95__96_7_13' #SA3
@@ -3212,21 +3413,47 @@ if __name__=="__main__":
                                 cancer_incidence_history,
                                 0.15 ,#error limit, 0.15-0.2 is pretty valid i think
                                 )
-    
+    vacc_levels= ['_6']
     get_elimination_table(alg_stems=algs_to_plot,
                           data_name='inc_cancers_fullpop_alltypes', 
                                cal_case_suffix=suffix,
-                               csv_filename='project_modelling/tabular_results/test.csv',
+                               csv_filename='project_modelling/tabular_results/tempFullPop.csv',
                                accepted_paramandseeds=accepted_paramseeds,
-                               vacc_levels=['_8'] #uncomment this line to just do the case of 80% vaccination
+                               vacc_levels=vacc_levels
                                )
-    #"""
+    get_elimination_table(alg_stems=algs_to_plot,
+                          data_name='inc_cancers_vaccpop_alltypes', 
+                               cal_case_suffix=suffix,
+                               csv_filename='project_modelling/tabular_results/tempVaccPop.csv',
+                               accepted_paramandseeds=accepted_paramseeds,
+                               vacc_levels=vacc_levels
+                               )
+    get_elimination_table(alg_stems=algs_to_plot,
+                          data_name='inc_cancers_eligibleunvaccpop_alltypes', 
+                               cal_case_suffix=suffix,
+                               csv_filename='project_modelling/tabular_results/tempUnvaccVaccEligPop.csv',
+                               accepted_paramandseeds=accepted_paramseeds,
+                               vacc_levels=vacc_levels
+                               )
+    """
 
     """
     #Uncomment this to get the equity timeseries plots
-    algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10']
+
+    #suffix = '_6_8_68_76_55_55_9_9__96_7_13' #SA0, 60% uptake
+    #suffix = '_8_8_68_76_55_55_9_9__96_7_13' #SA0, 80% uptake
+    #suffix = '_9_8_68_76_55_55_9_9__96_7_13' #SA0, 90% uptake
+    #suffix = '_8_65_68_76_55_55_9_9__96_7_13' #SA1, 80% uptake
+    #suffix = '_8_8_68_76_36_36_8_8__96_7_13' #SA2, 80% uptake
+    #suffix = '_8_8_8_8_68_68_95_95__96_7_13' #SA3, 80% uptake
+    #suffix = '_8_8_68_76_55_55_9_9_1_96_7_13' #SA4, 80% uptake
+    #suffix = '_8_8_68_76_55_55_9_9__96_7_62' #SA5, 80% uptake
+    suffix = '_8_8_68_76_55_55_9_9__9_85_13' #SA6, 80% uptake
+
+    algs_to_plot = [ 'V5U5A5','V10U10A10','V7U5A5','V10U5A5','V15U5A5', 'V_U5A5', 'V7U7A5', 'V10U10A5','V15U15A5','V_U_A5', 'V10U7A5','V15U10A5']
+    #algs_to_plot = ['V5U5A5','V7U5A5', 'V15U5A5', 'V_U5A5', 'V7U7A5', 'V15U15A5','V_U_A5', 'V10U7A5','V15U10A5', 'V10U10A10'] #this is a more limited set of algorithms to avoid a cluttered plot when using in the main body: it has all the bits that matter in it though
     for i in range(len(algs_to_plot)):
-        algs_to_plot[i] += '_8_8_68_76_55_55_9_9__96_7_13'
+        algs_to_plot[i] += suffix
 
     accepted_paramseeds, _ = get_history_matches_paramseeds(algs_to_plot[0],
                                    'inc_cancers_fullpop_alltypes',
@@ -3257,8 +3484,6 @@ if __name__=="__main__":
     for ytick in ax.get_yticks():
         ax.axhline(y=ytick, color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
     ax.set_ylabel('eligible unvaccpop routine screens')
-
-    plt.show()
     
     
     fig, ax = plt.subplots(1,1,figsize=(7, 5))

@@ -241,7 +241,7 @@ to_first_cytology = lambda sim: list(set(
     sim.get_intervention('routine_screening_under50').outcomes['positive'].tolist() +
     sim.get_intervention('routine_screening_50andover').outcomes['positive'].tolist()
 ))
-first_cytology = hpv.routine_triage(eligibility=to_first_cytology,
+first_cytology = hpv.routine_triage(eligibility=to_first_cytology, 
                                     prob = GlobalScreeningParameters.triage_screen_prob,
                                     age_range=[5,150], #I think routine traige doesnt introduce a constricted age range in by default, but in case it does, overriding it here
                                     product='lbc',

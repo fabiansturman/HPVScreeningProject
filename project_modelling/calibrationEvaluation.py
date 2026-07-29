@@ -30,11 +30,11 @@ from scenario_configuration import cal_filename  #import the name of this calibr
 print(cal_filename)
 
 #Whether to plot for start years (2012-2018 + 2011 cancerous genotype data) or end years (2019-2022)
-plot_start = False 
+plot_start = True 
 
 
 #Name for the dummy calibration
-cal_name = "project_modelling/calibration_results/dummy_10June26_1"
+cal_name = "project_modelling/calibration_results/dummy_18Jul26_2"
 
 #Simulation start and end dates
 start = 1980
