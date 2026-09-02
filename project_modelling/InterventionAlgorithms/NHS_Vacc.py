@@ -178,11 +178,11 @@ vaccinations = [
 if __name__=="__main__":
     #HPVsim simulation parameters
     pars = dict(
-            n_agents      = 20e3,       
+            n_agents      = 500,#20e3,       
             start=1970, end=2100,
             #verbose       = 0,   
             #rand_seed     = 1, #comment out random seed to get different results when runnning the same sim many times in a multisim and averaging over results
-            genotypes     = [16,18, 'hi5'],
+            genotypes     = [16,18, 'hi5', 'ohr'],
             burnin=30,
             location='united kingdom',
             )

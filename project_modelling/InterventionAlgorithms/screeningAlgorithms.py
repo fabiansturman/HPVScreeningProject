@@ -104,7 +104,7 @@ def routine_screen_eligible_under50(sim,
         print(f"WARNING!!!! Shorter screening callback interval for those whose previous HPV test was +ve is set to {shorter_interval}, not 3.")
 
     eligible = np.copy(sim.people.is_female_alive) #elgibility starts by only applying to living women
-    eligible = eligible & (sim.people.age>=24) & (sim.people.age<50) #filter to ages applicable to this intervention
+    eligible = eligible & (sim.people.age>=24.5) & (sim.people.age<50) #filter to ages applicable to this intervention
 
     current_year = sim.t*sim['dt']+sim['start']
 

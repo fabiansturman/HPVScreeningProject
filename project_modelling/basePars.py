@@ -39,7 +39,8 @@ base_pars = dict(n_agents= 200_000,
                 init_hpv_prev = {
                     'age_brackets'  : np.array([  16,   24,   34,   44,  54,   64, 150]),
                     'f'             : np.array([ 0.0, 0.25, 0.14,   0.08,  0.06,   0.06, 0.03]),
-                    'm'             : np.array([ 0.0,0.20, 0.23,   0.20,  0.18,   0.25, 0.25])#np.array([0,0.25, 0.14, 0.08, 0.06, 0.06, 0.03])#np.array([ 0.0,0.20, 0.23,   0.20,  0.18,   0.25, 0.25])
+                    'm'             : np.array([ 0.0,0.20, 0.23,   0.20,  0.18,   0.25, 0.25])
+                   # 'm' : np.array([0,0.25, 0.14, 0.08, 0.06, 0.06, 0.03])
                 },
 
                 init_hpv_dist = {
@@ -55,9 +56,35 @@ base_pars = dict(n_agents= 200_000,
 
 if __name__ == "__main__":
     import hpvsim as hpv
+    from InterventionAlgorithms.NHS_Vacc import vaccinations
+    from InterventionAlgorithms.screeningAlgorithms import get_routine_screening_interventions
 
-    base_pars['verbose'] = 1
+    import numpy as np
+    import matplotlib.pyplot as plt
 
-    sim = hpv.Sim(base_pars)
-    sim.run()
-    sim.plot()
+
+    sim_basic = hpv.Sim(base_pars, label='Sim, no interventions')
+
+    LQs = [] #will have dimension (num types of sim X num simulated timepoints)
+    medians = []
+    UQs = []
+    for sim in [sim_basic]:
+        msim = hpv.MultiSim(sim, n_runs=10)  
+        msim.run()
+
+        values = [] #will have dimension (num sims x num timepoints)         
+        for sim in msim.sims:
+             values.append(sim.results['infections'].values)
+        values = np.array(values)
+        LQs.append(np.percentile(values, axis=0, q=25))
+        medians.append(np.percentile(values, axis=0, q=50))
+        UQs.append(np.percentile(values, axis=0, q=75))
+
+    colors = ['red', 'black']
+    for i in range(len(LQs)):
+        xs = list(range(1980,2056))
+
+        plt.plot(xs, medians[i], color=colors[i])
+        plt.fill_between(xs, LQs[i], UQs[i], alpha=0.3, color=colors[i])
+
+    plt.show()

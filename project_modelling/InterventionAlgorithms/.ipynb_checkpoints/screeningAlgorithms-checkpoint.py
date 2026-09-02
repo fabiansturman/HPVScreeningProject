@@ -1,0 +1,382 @@
+"""
+This file contains an model of the current NHS England Cervical Screening Algorithm, with adjustments to allow for changing regular screening callback intervals to differ between three subpopulations of women:
+    -> Vaccinated individuals (women offered at least one dose of some HPV vaccine)
+    -> Unvaccinated, vaccine-eligible, individuals (women with no doses of a HPV vaccine but who were eligible for routine vaccination aged 12-13)
+    -> Vaccine-ineligible individuals (women who were aged over 12 in 2008)
+
+The algorithm switches from the current NHS England Cervical Screening Algorithm to the amended one at the switch year (2026).
+    ^https://www.gov.uk/government/publications/cervical-screening-care-pathway/cervical-screening-care-pathway (version as of 1st July 2025)
+
+File usage:
+    -> Import this file to easily integrate screening algorithm model into a HPVsim simulation
+        -> Use the function get_interventions( v, #the screening interval (in years) for vaccinated individuals. If v==0, then we interpret this as 'no screening for vaccinated individuals at/after the switch year (2026)'
+                                               u, #the screening interval (in years) for unvaccinated, vaccine-eligible, individuals. If u==0, then we interpret this as 'no screening for unvaccinated vaccine-eligible individuals at/after the switch year (2026)'
+                                               a  #the screening interval (in years) for vaccine-ineligible individuals. If a==0, then we interpret this as 'no screening for vaccine-eligible individuals at/after the switch year (2026)'
+                                               )
+    
+    -> Run this file (as __main__) to run a HPVsim simulation with this screening and debug changes to the algorithm
+
+
+    """
+
+#--- Imports ---#
+import hpvsim as hpv
+import numpy as np
+from copy import copy
+
+#NOTE: the imports below are a little unstable, as they change depending on whether we are running things from within the directory InterventionAlgorithms, or outside of it.
+
+from .generalCancerTreatment import  GeneralCancerTreatment, treat_num_cancer, treat_num_canceragnostic  #USE THIS iff running code which imports this from outside of Intervention Algorithms
+from InterventionAlgorithms import GlobalScreeningParameters as GlobalScreeningParameters  #USE THIS iff running code which imports this from outside of Intervention Algorithms
+
+#from generalCancerTreatment import  GeneralCancerTreatment, treat_num_cancer, treat_num_canceragnostic #USE THIS iff running this code itself, or other code which is inside and imports this code
+#import GlobalScreeningParameters as GlobalScreeningParameters #USE THIS iff running this code itself, or other code which is inside and imports this code
+
+
+def init_intervention_trackers(sim):
+    """
+    For t=0, sets up tracking apparatus within the sim for other interventions in this file to run.
+    WARNING: Must be added to a sim before all other interventions defined in this file (as sim runs interventions in the order of its intervention list, and therefore we need this to run first, to define the interventions themselves)
+    """
+    if sim.t == 0:
+        #Tracks properties of agents as dictionaries {agent_id: tracked property} to handle dynamic populations; agent_id is permanent for any given agent
+        sim.people.last_hpv_result = {} #track whether an agent's last hpv test result was positive or not
+            #TODO: could I refactor this s.t. I just keep track of a list of agent_id's whose last hpv test results were positive, as we dont need to clog things up with keeping track of who has had negative results
+        sim.people.needs_consec_screening_2 = {} #keeps track of who needs a second round of consecutive screening, if contains (pid: t) then agent pid needs screening at earliest time t
+        sim.people.needs_consec_screening_3 = {} #as above, but for a third round of consecutive screening
+init_intervention_trackers.label="init_intervention_trackers"
+
+
+#Custom interventions to update attributes that keep track of the other interventions' results, persistently across years
+def update_last_hpv_result(sim):
+    #For everyone who has undergone a screening of some sort, update their 'last_hpv_result' property to reflect the outcome of the screening
+    hpv_test_names = ["routine_screening_under50","routine_screening_50andover", "second_consecutive_screening", "third_consecutive_screening"]
+        #the above list is in order of administration of the tests within a given timepoint; noone should undergo several of the same tests at any point, but just in case we want to use the most recent result!
+    for name in hpv_test_names:
+        hpv_test = sim.get_intervention(name)
+        for positive in hpv_test.outcomes.get('positive'):
+            sim.people.last_hpv_result[positive] = +1
+        for negative in hpv_test.outcomes.get('negative'):
+            sim.people.last_hpv_result[negative] = -1
+update_last_hpv_result.label="update_last_hpv_result" #by adding an intervention as a function, when searching 'get_intervention', interventions without a label attribute cause an error
+
+def update_needs_consec_screening_2(sim, name="first_cytology"):
+    #If a woman has a -ve result from her first cytology, she is eligible for a second consecutive screening in 12 months
+    for i in sim.get_intervention(name).outcomes['normal']: #iterate over all negative outcomes from first cytology IN THiS TIMESTEP (as each interventions 'outcomes' property is wiped at the start of each timestep)
+        sim.people.needs_consec_screening_2[i] = sim.t+1/sim["dt"]
+    
+    #All women who have undergone their second conseucutive screening have this updated in their record (no more need for 2nd consecutive screening)
+    for i in sim.get_intervention("second_consecutive_screening").outcomes['positive']:
+        sim.people.needs_consec_screening_2.pop(i)
+    for i in sim.get_intervention("second_consecutive_screening").outcomes['negative']:
+        sim.people.needs_consec_screening_2.pop(i)
+    for i in sim.get_intervention("second_consecutive_screening").outcomes['inadequate']:
+        sim.people.needs_consec_screening_2.pop(i)
+update_needs_consec_screening_2.label="update_needs_consec_screening_2"
+
+def update_needs_consec_screening_3(sim, name="second_cytology"):
+    #If a woman has a -ve result from her second cytology, she is eligible for a third consecutive screening in 12 months
+    for i in sim.get_intervention(name).outcomes['normal']: #iterate over all negative outcomes from second cytology IN THiS TIMESTEP (as each interventions 'outcomes' property is wiped at the start of each timestep)
+        sim.people.needs_consec_screening_3[i] = sim.t+1/sim["dt"]
+        
+    #All women who have undergone their third conseucutive screening have this updated in their record (no more need for 3rd consecutive screening)
+    for i in sim.get_intervention("third_consecutive_screening").outcomes['positive']:
+        sim.people.needs_consec_screening_3.pop(i)
+    for i in sim.get_intervention("third_consecutive_screening").outcomes['negative']:
+        sim.people.needs_consec_screening_3.pop(i)
+    for i in sim.get_intervention("third_consecutive_screening").outcomes['inadequate']:
+        sim.people.needs_consec_screening_3.pop(i)
+update_needs_consec_screening_3.label="update_needs_consec_screening_3"
+
+
+#NOTE: routine screening is split into two eligibility functions and two interventions, to target under 50s and 50-and-overs seperately, due to their differently-modelled probabilities of screening uptake (this models the split easily as two instances of the same screening intervention, which then feed into the same followup process) 
+
+def routine_screen_eligible_under50(sim,
+                                    v, u, a,
+                                    switch_year, 
+                                    shorter_interval = 3#3000000000 
+                                    ):
+    '''
+    Returns a Boolean np.array length {n}(:= number of agents at current time, {sim.t}). ith entry is True iff individual with pid==i is screen-eligible
+    The screening intervention for under-50s is different to the screening intervention for over-50s (to allow for different uptake probabilities); this is only for eligibilitg for under-50 screenings.
+    '''
+    if sim.t==0 and shorter_interval!=3:
+        print(f"WARNING!!!! Shorter screening callback interval for those whose previous HPV test was +ve is set to {shorter_interval}, not 3.")
+
+    eligible = np.copy(sim.people.is_female_alive) #elgibility starts by only applying to living women
+    eligible = eligible & (sim.people.age>=24.5) & (sim.people.age<50) #filter to ages applicable to this intervention
+
+    current_year = sim.t*sim['dt']+sim['start']
+
+    #loop over all agents which remain as potentially eligible, and filter out those which are not actually elgibile
+    for pid in np.flatnonzero(eligible): 
+        #Get properties of agent pid
+        age = sim.people.age[pid]
+        vaccinated = sim.people.vaccinated[pid]
+        last_hpv_result = sim.people.last_hpv_result[pid] if pid in sim.people.last_hpv_result else None
+        date_screened = sim.people.date_screened[pid]
+
+        #Primary-screen elgibility criteria depend on whether we have reached the switch year
+        if current_year < switch_year:
+            #We are applying the NHS 2025 screening pathway
+            if np.isnan(sim.people.date_screened[pid]):
+                #If individual has not been screened, they are screen-eligible
+                pass
+            else:
+                #If individual has been screened before, at this point in the decision tree, the individual is ineligible for screening iff they have not yet reached their due-date for screening
+                screen_interval = shorter_interval if last_hpv_result==1 else 5
+                if sim.t<date_screened+screen_interval/sim['dt']:
+                    eligible[pid]=False 
+        else:
+            #We are varying screening eligibility according to vaccination-state and/or cohort membership:
+            #so, determine the partition this individual falls into, in terms of screening interval
+            screen_interval = None
+            if vaccinated:
+                screen_interval = v
+            elif current_year - (age-12) >=2008:
+                #equivalent to checking 'year when agent was 12 years old'>=2008, i.e. agent was elgiible for vaccination when aged 12 (note that we have established by now the agent is aged over 12, so this will not erroneously assign children as 'vaccine-elgiible')
+                screen_interval = u
+            else:
+                #in this case, the agent was older than 12 years old in 2008
+                screen_interval = a
+            #at this point in the code, screen_interval reflects the screening interval assigned to the vaccination-state this agent finds itself in
+            
+            #If screen_interval==0, then individuals in this population partition are never screened past switch_year (unless thier last screening result was HPV+ve, as we are not changing the policy from the NHS 2025 policy in this case)
+            if screen_interval == 0:
+                if last_hpv_result==1:
+                    #if last HPV DNA test result was positive, then due a followup after 3 years even though otherwise they would be not be eligible for any screenings 
+                    if sim.t<date_screened+shorter_interval/sim['dt']:
+                        eligible[pid]=False 
+                else:
+                    eligible[pid]=False
+            else:
+                #override screen interval to be 3 years iff last HPV DNA test was +ve
+                screen_interval = min(shorter_interval,screen_interval) if last_hpv_result==1 else screen_interval
+
+                #at this point in the decision tree, only individuals who have been screened before and are not yet due their routine follow-up remain ineligible
+                if (not np.isnan(sim.people.date_screened[pid])) and  sim.t<date_screened+screen_interval/sim['dt']:
+                    eligible[pid]=False 
+
+    return eligible
+
+
+def routine_screen_eligible_50andover(sim,
+                                    v, u, a,
+                                    switch_year):
+    '''
+    Returns a Boolean np.array length {n}(:= number of agents at current time, {sim.t}). ith entry is True iff individual with pid==i is screen-eligible
+    The screening intervention for 50-and-overs is different to the screening intervention for under-50s (to allow for different uptake probabilities); this is only for eligibilitg for 50-and-over screenings.
+    '''
+    eligible = np.copy(sim.people.is_female_alive) #elgibility starts by only applying to living women
+    eligible = eligible & (sim.people.age>=50) & (sim.people.age<=65) #filter to ages applicable to this intervention
+
+    current_year = sim.t*sim['dt']+sim['start']
+
+    #loop over all agents which remain as potentially eligible, and filter out those which are not actually elgibile
+    for pid in np.flatnonzero(eligible): 
+        #Get properties of agent pid
+        age = sim.people.age[pid]
+        vaccinated = sim.people.vaccinated[pid]
+        date_screened = sim.people.date_screened[pid]
+
+        #Primary-screen elgibility criteria depend on whether we have reached the switch year
+        if current_year < switch_year:
+            #We are applying the NHS 2025 screening pathway
+            if np.isnan(sim.people.date_screened[pid]):
+                #If individual has not been screened, they are screen-eligible
+                pass
+            else:
+                screen_interval = 5 #for 50-and-overs, screening interval does not depend on last HPV result
+                if sim.t<date_screened+screen_interval/sim['dt']:
+                    eligible[pid]=False 
+        else:
+            #We are varying screening eligibility according to vaccination-state and/or cohort membership:
+            #determine the partition this individual falls into, in terms of screening interval
+            screen_interval = None
+            if vaccinated:
+                screen_interval = v
+            elif current_year - (age-12) >=2008:
+                #equivalent to checking 'year when agent was 12 years old'>=2008, i.e. agent was elgiible for vaccination when aged 12 (note that we have established by now the agent is aged over 12, so this will not erroneously assign children as 'vaccine-elgiible')
+                screen_interval = u
+            else:
+                #in this case, the agent was older than 12 years old in 2008
+                screen_interval = a
+            #at this point in the code, screen_interval reflects the screening interval assigned to the vaccination-state this agent finds itself in
+            
+            #If screen_interval==0, then individuals in this population partition are never screened past switch_year (unless thier last screening result was HPV+ve, as we are not changing the policy from the NHS 2025 policy in this case)
+            if screen_interval == 0:
+                eligible[pid]=False
+            else:
+                #at this point in the decision tree, only individuals who have been screened before and are not yet due their routine follow-up remain ineligible
+                if (not np.isnan(sim.people.date_screened[pid])) and  sim.t<date_screened+screen_interval/sim['dt']:
+                    eligible[pid]=False 
+
+    return eligible
+
+
+
+
+
+def get_routine_screening_interventions(v, u, a, switch_year):
+    routine_screening_under50  = hpv.routine_screening(eligibility=lambda sim: routine_screen_eligible_under50(sim, v,u,a, switch_year), 
+                                    start_year=GlobalScreeningParameters.screening_start_year, 
+                                    age_range=[5,150],#overriding the default age range of [30,50] with a very large one - so as not to interfere with the age range I define in my eligibility checking
+                                    prob=GlobalScreeningParameters.primary_screen_prob_under50, 
+                                    product='hpv',        #Screening: DNA HPV Testing
+                                    label='routine_screening_under50') 
+    
+    routine_screening_50andover  = hpv.routine_screening(eligibility=lambda sim: routine_screen_eligible_50andover(sim, v,u,a, switch_year), 
+                                    start_year=GlobalScreeningParameters.screening_start_year, 
+                                    age_range=[5,150],#overriding the default age range of [30,50] with a very large one - so as not to interfere with the age range I define in my eligibility checking
+                                    prob=GlobalScreeningParameters.primary_screen_prob_50andover, 
+                                    product='hpv',        #Screening: DNA HPV Testing
+                                    label='routine_screening_50andover') 
+    return [routine_screening_under50, routine_screening_50andover]
+
+
+
+# First (Consecutive) Cyotology for women with positive routine screening
+    #[We will refer to actions as 'consecutive' if they can all be traced back to the same initial routine screening]
+to_first_cytology = lambda sim: list(set(
+    sim.get_intervention('routine_screening_under50').outcomes['positive'].tolist() +
+    sim.get_intervention('routine_screening_50andover').outcomes['positive'].tolist()
+))
+first_cytology = hpv.routine_triage(eligibility=to_first_cytology, 
+                                    prob = GlobalScreeningParameters.triage_screen_prob,
+                                    age_range=[5,150], #I think routine traige doesnt introduce a constricted age range in by default, but in case it does, overriding it here
+                                    product='lbc',
+                                    annual_prob=False,
+                                    label="first_cytology")
+
+#If first cytology negative, send to a screening in a year (i.e. a second consecutive screening)
+def second_screening_eligible(sim):
+    for_screening = np.array([False,]*sim.n)
+    for i in sim.people.needs_consec_screening_2.keys():
+        if sim.people.needs_consec_screening_2[i] is not None and sim.people.needs_consec_screening_2[i] <= sim.t <= sim.people.needs_consec_screening_2[i] + GlobalScreeningParameters.abandon_followup_invites_threshold:
+            for_screening[i]=True 
+    return for_screening
+
+second_consecutive_screening  = hpv.routine_screening(eligibility=second_screening_eligible, 
+                                    start_year=GlobalScreeningParameters.screening_start_year,                                     
+                                    age_range=[5,150],#overriding the default age range of [30,50] with a very large one - so as not to interfere with the age range I define in my eligibility checking
+                                    prob=GlobalScreeningParameters.secondary_screen_prob, 
+                                    product='hpv',        #Screening: DNA HPV Testing
+                                    label='second_consecutive_screening') 
+
+#-ve from second screening are returned to standard screening - their date_screened is updated from the second screening, so nothing needed for them
+#+ve from second screening do second cytology
+to_second_cytology = lambda sim: sim.get_intervention('second_consecutive_screening').outcomes['positive']
+second_cytology = hpv.routine_triage(eligibility=to_second_cytology,
+                                    prob = GlobalScreeningParameters.triage_screen_prob,
+                                    age_range=[5,150], #I think routine traige doesnt introduce a constricted age range in by default, but in case it does, overriding it here
+                                    product='lbc',
+                                    annual_prob=False,
+                                    label="second_cytology")
+
+#-ve from second cytology do a third consecutive HPV screening in 12 months
+def third_screening_eligible(sim):
+    for_screening = np.array([False,]*sim.n)
+    for i in sim.people.needs_consec_screening_3.keys():
+        if sim.people.needs_consec_screening_3[i] is not None and  sim.people.needs_consec_screening_3[i] <= sim.t <= sim.people.needs_consec_screening_3[i] + GlobalScreeningParameters.abandon_followup_invites_threshold:
+            for_screening[i]=True
+    return for_screening
+
+third_consecutive_screening  = hpv.routine_screening(eligibility=third_screening_eligible, 
+                                    start_year=GlobalScreeningParameters.screening_start_year, 
+                                    age_range=[5,150],#overriding the default age range of [30,50] with a very large one - so as not to interfere with the age range I define in my eligibility checking
+                                    prob=GlobalScreeningParameters.third_screen_prob, 
+                                    product='hpv',        #Screening: DNA HPV Testing
+                                    label='third_consecutive_screening') 
+
+#-ve from third screening are returned to standard screening. As their latest screening time is updated in {date_screened}, no need to do anything here
+#+ve from third screening perform a third cyotology followed by a mandatory colposcopy
+to_third_cytology = lambda sim: sim.get_intervention('third_consecutive_screening').outcomes['positive']
+third_cytology = hpv.routine_triage(eligibility=to_third_cytology,
+                                    prob = GlobalScreeningParameters.triage_screen_prob,
+                                    age_range=[5,150], #I think routine traige doesnt introduce a constricted age range in by default, but in case it does, overriding it here
+                                    product='lbc',
+                                    annual_prob=False,
+                                    label="third_cytology")
+
+#Eligible for a colposcopy if any of the following hold: A)tested not normal for any cytology; B) went all the way to a third screening/cytology
+colposcopy_eligible = lambda sim:list(set(sim.get_intervention('first_cytology').outcomes['abnormal'].tolist() + sim.get_intervention('first_cytology').outcomes['ascus'].tolist() +
+                                        sim.get_intervention('second_cytology').outcomes['abnormal'].tolist() + sim.get_intervention('second_cytology').outcomes['ascus'].tolist() +
+                                        sim.get_intervention('third_cytology').outcomes['normal'].tolist() + sim.get_intervention('third_cytology').outcomes['abnormal'].tolist() + sim.get_intervention('third_cytology').outcomes['ascus'].tolist()))
+
+
+colposcopy =  hpv.routine_triage(eligibility=colposcopy_eligible, 
+                                prob=GlobalScreeningParameters.colpo_prob, 
+                                age_range=[5,150], #I think routine traige doesnt introduce a constricted age range in by default, but in case it does, overriding it here
+                                product='colposcopy', 
+                                annual_prob=False, 
+                                label='colposcopy')
+
+hsil_by_colpo = lambda sim: sim.get_intervention('colposcopy').outcomes['hsil'] #i.e. covers all women diagnosed with HSIL by a colposcopy
+#ablation = hpv.treat_num(eligibility=hsil_by_colpo, 
+ablation = treat_num_canceragnostic(eligibility=hsil_by_colpo, 
+                        prob=GlobalScreeningParameters.ablate_prob, 
+                        #No need to add an age range here, as by default subclasses of BaseTreatment have an age range of [0,99] - that is, they don't restrict the age range beyond any calculations in the provided eligibility function 
+                        product='ablation', 
+                        label='ablation') #NOTE: can model a max capacity with treat_num too, but as it stands we pretend infinite capacity
+
+cancer_by_colpo = lambda sim: sim.get_intervention('colposcopy').outcomes['cancer'] 
+general_cancer_treatment = GeneralCancerTreatment(p_clear=GlobalScreeningParameters.cancer_treatment_effectiveness, p_extend=0.00, extend_dur=dict(dist='normal', par1=18.0, par2=2.))
+gct = treat_num_cancer(eligibility=cancer_by_colpo, 
+                        prob=GlobalScreeningParameters.generalcancertreatment_prob, 
+                        #No need to add an age range here, as by default subclasses of BaseTreatment have an age range of [0,99] - that is, they don't restrict the age range beyond any calculations in the provided eligibility function
+                        product=general_cancer_treatment, 
+                        label='general_cancer_treatment') 
+
+
+
+
+
+
+
+def get_interventions(v,u,a, switch_year=GlobalScreeningParameters.switch_year):
+    interventions = [init_intervention_trackers] + get_routine_screening_interventions(v,u,a, switch_year) + [
+                            first_cytology, second_consecutive_screening, 
+                            second_cytology, third_consecutive_screening, 
+                            third_cytology, 
+                            colposcopy, 
+                            ablation, gct, 
+                        update_last_hpv_result, update_needs_consec_screening_2,  update_needs_consec_screening_3,
+                                       ]
+    return interventions
+
+
+
+if __name__=="__main__":
+    #HPVsim simulation parameters
+    pars = dict(
+            n_agents      = 20e3,       
+            start=1970, end=2200,#2080,
+            #verbose       = 0,   
+            rand_seed     = 1, 
+            genotypes     = [16,18, 'hi5'],
+            burnin=30,
+            location='united kingdom',
+            )
+
+
+    #Define simulation without interventions
+    sim_basic = hpv.Sim(pars,
+                        label='Sim, no interventions')
+
+    #Define simulation with interventions
+    sim_interventions =  hpv.Sim(pars, interventions = get_interventions(1,1)
+                                 , #interventions can just be functions of a sim
+                                            label='NHS Cervical Screening Pathway 2025')
+
+
+    
+    #Run and plot sims
+    reduced_sims = []
+    for sim in [sim_basic, sim_interventions]:
+        msim = hpv.MultiSim(sim, n_runs=10)  
+        msim.run()         
+        reduced_sims.append(msim.reduce(use_mean=True, output=True))  
+
+
+    msim = hpv.MultiSim(reduced_sims)
+    msim.plot()
